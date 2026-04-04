@@ -1,26 +1,109 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/*
+ ================================================
+ Global Styles 
+ ================================================
+ */
+ 
+ :root {
+     --background: #ffffff;
+     --foreground: #171717;
+    }
+    
+    @theme inline {
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --font-sans: var(--font);
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+    :root {
+        --background: #0a0a0a;
+        --foreground: #ededed;
+    }
+}
+
+a {
+    @apply text-gray-500 hover:text-gray-900 transition-colors duration-200 relative;
+}
+
+a[data-tooltip]:after {
+    content: attr(data-tooltip);
+    @apply absolute left-[50%] top-1/1 scale-90 -translate-y-1/2 bg-gray-600 blur-[0.01px]  text-white text-xs whitespace-nowrap opacity-0 pointer-events-none transition-all delay-1000 duration-75 transition-opacity rounded px-2.5 py-1;
+}
+
+a[data-tooltip]:hover:after {
+    @apply opacity-100 z-50 blur-none ;
+}
+
+* > svg {
+    @apply w-full h-full
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+    @apply bg-blue-50 text-neutral-900 font-sans m-0 p-0;
+}
+
+.container {
+    @apply mx-auto w-[96%];
+}
+
+.btn {
+    @apply px-4 py-3 rounded-md font-medium transition-colors duration-200;
+}
+
+.btn.btn__primary {
+    @apply bg-green-600 text-neutral-100 hover:text-neutral-100 hover:tracking-wider !transition-all !duration-700 hover:scale-[1.0001];
+}
+
+
+/*
+ ================================================
+ Navbar Styles 
+ ================================================
+ */
+
+nav {
+    @apply bg-green-100 h-24 overflow-hidden flex items-center;
+}
+
+.container.nav__container {
+    @apply flex items-center justify-between;
+}
+
+.nav__group.action__group {
+    @apply flex items-center gap-6;
+}
+
+.nav__group.nav__logo {
+    @apply flex items-center gap-1;
+}
+
+.nav__logo-icon {
+    @apply w-14 h-14;
+}
+
+.nav__logo-txt {
+    @apply text-2xl font-bold text-gray-900; 
+}
+
+.nav__group.action__group {
+    @apply flex items-center gap-6;
+}
+
+.nav__group.action__group .action-link {
+    @apply flex items-center gap-2 transition-colors duration-200;
+}
+
+.action-link {
+    @apply flex items-center gap-2 text-gray-500 hover:text-gray-900 transition-colors duration-200;
+}
+
+.action-link svg {
+    @apply w-5 h-5;
+}
+
+.action-link.profile-pic {
+    @apply w-14 h-14 rounded-full object-cover border-2 border-gray-600 p-0;
 }
