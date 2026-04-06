@@ -47,3 +47,5 @@ next-env.d.ts
 *.cline
 
 *.zip
+
+*implementation_plan.md
