@@ -37,16 +37,6 @@ export default function Login() {
 
   return (
     <div className="auth-split">
-      {/* Brand panel */}
-      <aside className="auth-brand">
-        <div className="auth-brand-grid" />
-        <div className="auth-brand-glow" />
-
-        <Link href="/" className="auth-brand-logo">
-          <Image width={36} height={36} src="/logo.svg" alt="UniLock" />
-          <span>UniLock</span>
-        </Link>
-
         <div className="auth-brand-content">
           <h2 className="auth-brand-heading">
             Welcome back.<br />
