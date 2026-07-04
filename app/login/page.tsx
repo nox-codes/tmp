@@ -85,7 +85,7 @@ export default function Login() {
       <main className="auth-form-panel">
         <div className="auth-form-mobile-logo">
           <Link href="/" className="footer-brand">
-            <Image width={32} height={32} src="/logo.svg" alt="UniLock" />
+            <Image width={32} height={32} src="logo-nobg.png" alt="UniLock" />
             <span className="footer-brand-text">UniLock</span>
           </Link>
         </div>

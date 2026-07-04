@@ -85,7 +85,7 @@ export default function Register() {
         <div className="auth-brand-glow" />
 
         <Link href="/" className="auth-brand-logo">
-          <Image width={36} height={36} src="/logo.svg" alt="UniLock" />
+          <Image width={36} height={36} src="/logo-nobg.png" alt="UniLock" />
           <span>UniLock</span>
         </Link>
 
