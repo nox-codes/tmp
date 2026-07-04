@@ -37,6 +37,8 @@ export default function Login() {
 
   return (
     <div className="auth-split">
+      {/* Brand panel */}
+      <aside className="auth-brand">
         <div className="auth-brand-content">
           <h2 className="auth-brand-heading">
             Welcome back.<br />
