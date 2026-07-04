@@ -17,7 +17,7 @@ export default function NavBar() {
     <nav className="nav-bar">
       <div className="nav-container">
         <Link href="/" className="nav__logo">
-          <Image width={32} height={32} src="/logo.svg" alt="UniLock" />
+          <Image width={32} height={32} src="/logo-nobg.png" alt="UniLock" />
           <span className="nav__logo-text">UniLock</span>
         </Link>
 
