@@ -83,12 +83,12 @@ export default function Login() {
 
       {/* Form panel */}
       <main className="auth-form-panel">
-        <div className="auth-form-mobile-logo">
+        {/* <div className="auth-form-mobile-logo">
           <Link href="/" className="footer-brand">
             <Image width={32} height={32} src="logo-nobg.png" alt="UniLock" />
             <span className="footer-brand-text">UniLock</span>
           </Link>
-        </div>
+        </div> */}
 
         <form className="auth-form" onSubmit={handleSubmit}>
           <h1 className="auth-form-title">Log in to UniLock</h1>

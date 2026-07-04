@@ -84,11 +84,11 @@ export default function Register() {
         <div className="auth-brand-grid" />
         <div className="auth-brand-glow" />
 
-        <Link href="/" className="auth-brand-logo">
+        {/* <Link href="/" className="auth-brand-logo">
           <Image width={36} height={36} src="/logo-nobg.png" alt="UniLock" />
           <span>UniLock</span>
         </Link>
-
+ */}
         <div className="auth-brand-content">
           <h2 className="auth-brand-heading">
             Start free.<br />
