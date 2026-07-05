@@ -12,6 +12,7 @@ import {
   HiOutlineCheckCircle,
   HiOutlineCreditCard,
   HiOutlineCog,
+  HiOutlineX,
 } from "react-icons/hi"
 import { fetchCourses, fetchUserProfile, updateUserTier, type CourseApiItem, type Tier } from "../lib/api"
 import { useAuth, useRequireAuth } from "../lib/auth-context"
@@ -278,36 +279,48 @@ export default function Dashboard() {
               <HiOutlineClock className="h-6 w-6 text-amber-400 shrink-0" />
               <div>
                 <p className="font-semibold text-[var(--text)]">
-                  {pendingTier === "FULL" ? "Premium" : "Basic"} upgrade is being processed
+                  {pendingTier === "FULL" ? "Premium" : "Basic"} upgrade pending
                 </p>
                 <p className="text-sm text-[var(--text-mute)]">
-                  Your payment was received and your account is being updated. This usually takes a few minutes.
+                  {checkingPayment ? "Checking your account..." : "You started an upgrade. Check if it went through or dismiss this notice."}
                 </p>
               </div>
             </div>
-            <button
-              onClick={async () => {
-                setCheckingPayment(true)
-                try {
-                  const profile = await fetchUserProfile()
-                  const raw = sessionStorage.getItem("pending_payment")
-                  if (raw) {
-                    const { tier } = JSON.parse(raw)
-                    if (profile.tier === tier) {
-                      updateUserTier(tier)
-                      sessionStorage.removeItem("pending_payment")
-                      setPendingTier(null)
-                      refreshUserData()
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={async () => {
+                  setCheckingPayment(true)
+                  try {
+                    const profile = await fetchUserProfile()
+                    const raw = sessionStorage.getItem("pending_payment")
+                    if (raw) {
+                      const { tier } = JSON.parse(raw)
+                      if (profile.tier === tier) {
+                        updateUserTier(tier)
+                        sessionStorage.removeItem("pending_payment")
+                        setPendingTier(null)
+                        refreshUserData()
+                      }
                     }
-                  }
-                } catch {}
-                setCheckingPayment(false)
-              }}
-              disabled={checkingPayment}
-              className="btn btn-secondary btn-sm px-6 py-2.5 shrink-0"
-            >
-              {checkingPayment ? "Checking..." : "Check Now"}
-            </button>
+                  } catch {}
+                  setCheckingPayment(false)
+                }}
+                disabled={checkingPayment}
+                className="btn btn-secondary btn-sm px-6 py-2.5 shrink-0"
+              >
+                {checkingPayment ? "Checking..." : "Check Now"}
+              </button>
+              <button
+                onClick={() => {
+                  sessionStorage.removeItem("pending_payment")
+                  setPendingTier(null)
+                }}
+                className="btn btn-secondary btn-sm px-3 py-2.5"
+                aria-label="Dismiss"
+              >
+                <HiOutlineX className="h-4 w-4" />
+              </button>
+            </div>
           </div>
         </section>
       )}
