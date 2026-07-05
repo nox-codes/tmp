@@ -12,6 +12,7 @@ import {
   HiOutlineX,
 } from "react-icons/hi"
 import { fetchQuestionsByCourse, type QuestionApiItem } from "../../lib/api"
+import { useAuth } from "../../lib/auth-context"
 
 type LocalQuestion = {
   id: number
@@ -30,11 +31,14 @@ function toLocal(q: QuestionApiItem): LocalQuestion {
 }
 
 function ExamContent() {
+  const { user } = useAuth()
+  const tier = user?.tier ?? 'FREE'
   const router = useRouter()
   const searchParams = useSearchParams()
   const courseCode = searchParams.get('course') ?? 'CSC 312'
   const courseName = searchParams.get('name') ?? 'Algorithms & Complexity'
-  const numQs = Math.min(80, Math.max(5, Number(searchParams.get('q')) || 40))
+  const maxAllowed = tier === 'FREE' ? 20 : 80
+  const numQs = Math.min(maxAllowed, Math.max(5, Number(searchParams.get('q')) || 40))
   const totalSeconds = (Number(searchParams.get('dur')) || 60) * 60
   const isPractice = searchParams.get('mode') === 'practice'
 
@@ -117,6 +121,7 @@ function ExamContent() {
     const skipped = total - answeredCount
     const score = total > 0 ? Math.round((correct / total) * 100) : 0
 
+    const durationStr = isPractice ? 'Practice' : `${Math.floor((totalSeconds - (remaining >= 0 ? remaining : 0)) / 60)} min`
     const result = {
       courseCode,
       courseName,
@@ -125,12 +130,20 @@ function ExamContent() {
       wrong,
       skipped,
       total,
-      duration: isPractice ? 'Practice' : `${Math.floor((totalSeconds - (remaining >= 0 ? remaining : 0)) / 60)} min`,
+      duration: durationStr,
       answers: answered,
       questions,
       flagged: Array.from(flagged),
     }
     sessionStorage.setItem('cbt_result', JSON.stringify(result))
+
+    const historyItem = { courseCode, courseName, score, correct, wrong, skipped, total, duration: durationStr, timestamp: new Date().toISOString() }
+    try {
+      const existing = JSON.parse(localStorage.getItem('cbt_history') ?? '[]')
+      existing.push(historyItem)
+      localStorage.setItem('cbt_history', JSON.stringify(existing))
+    } catch {}
+
     router.push('/cbt/results')
   }
 

@@ -2,42 +2,91 @@
 
 import { Suspense, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { HiCheckCircle, HiXCircle } from "react-icons/hi"
-import { updateUserTier } from "../../lib/api"
+import { HiCheckCircle, HiXCircle, HiClock } from "react-icons/hi"
+import { fetchUserProfile, updateUserTier } from "../../lib/api"
+import { useAuth } from "../../lib/auth-context"
 import type { Tier } from "../../lib/api"
 
 function PaymentSuccessInner() {
   const router = useRouter()
-  const [status, setStatus] = useState<"verifying" | "success" | "error">("verifying")
+  const { refreshUserData } = useAuth()
+  const [status, setStatus] = useState<"verifying" | "success" | "processing" | "cancelled" | "error">("verifying")
   const [errorMsg, setErrorMsg] = useState("")
+  const [expectedTier, setExpectedTier] = useState<Tier | null>(null)
+  const [retryKey, setRetryKey] = useState(0)
+  const [countdown, setCountdown] = useState(7)
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const reference = params.get("reference")
-    const pending = sessionStorage.getItem("pending_payment")
 
     if (!reference) {
-      setStatus("error")
-      setErrorMsg("No payment reference found.")
+      const pending = sessionStorage.getItem("pending_payment")
+      if (pending) {
+        try {
+          const { tier } = JSON.parse(pending)
+          setExpectedTier(tier as Tier)
+        } catch {}
+        sessionStorage.removeItem("pending_payment")
+      }
+      setStatus("cancelled")
       return
     }
 
+    const pending = sessionStorage.getItem("pending_payment")
+    let tier: Tier | null = null
+
     if (pending) {
       try {
-        const { tier } = JSON.parse(pending)
-        updateUserTier(tier as Tier)
-        sessionStorage.removeItem("pending_payment")
+        const parsed = JSON.parse(pending)
+        tier = parsed.tier as Tier
+        setExpectedTier(tier)
       } catch {}
     }
 
-    setStatus("success")
+    setStatus("verifying")
 
-    const timer = setTimeout(() => {
-      router.replace("/dashboard")
-    }, 3000)
+    fetchUserProfile()
+      .then(profile => {
+        if (tier && profile.tier === tier) {
+          updateUserTier(tier)
+          sessionStorage.removeItem("pending_payment")
+          refreshUserData()
+          setStatus("success")
+          setTimeout(() => router.replace("/dashboard"), 3000)
+        } else if (tier && profile.tier !== tier) {
+          setStatus("processing")
+        } else {
+          refreshUserData()
+          setStatus("success")
+          setTimeout(() => router.replace("/dashboard"), 3000)
+        }
+      })
+      .catch(() => {
+        if (tier) {
+          setStatus("processing")
+        } else {
+          setStatus("error")
+          setErrorMsg("Could not verify your payment status.")
+        }
+      })
+  }, [router, refreshUserData, retryKey])
 
-    return () => clearTimeout(timer)
-  }, [router])
+  useEffect(() => {
+    if (status !== "cancelled" && status !== "error") return
+    setCountdown(7)
+    const timer = setInterval(() => {
+      setCountdown(prev => {
+        if (prev <= 1) {
+          clearInterval(timer)
+          router.replace("/settings?tab=billing")
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [status, router])
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[var(--bg)] px-6">
@@ -71,6 +120,58 @@ function PaymentSuccessInner() {
           </div>
         )}
 
+        {status === "processing" && (
+          <div className="space-y-6">
+            <div className="h-16 w-16 mx-auto rounded-full bg-amber-500/20 flex items-center justify-center">
+              <HiClock className="h-10 w-10 text-amber-400" />
+            </div>
+            <div className="space-y-2">
+              <h1 className="text-2xl font-bold text-[var(--text)]">Still Processing</h1>
+              <p className="text-[var(--text-mute)]">
+                Your payment was received but your plan is still being updated. This usually takes a few minutes.
+                You can check again or visit your dashboard.
+              </p>
+            </div>
+            <div className="flex gap-4 justify-center">
+              <button
+                onClick={() => setRetryKey(k => k + 1)}
+                className="btn btn-primary px-10 py-4 text-base"
+              >
+                Check Again
+              </button>
+              <button
+                onClick={() => router.replace("/dashboard")}
+                className="btn btn-secondary px-10 py-4 text-base"
+              >
+                Go to Dashboard
+              </button>
+            </div>
+          </div>
+        )}
+
+        {status === "cancelled" && (
+          <div className="space-y-6">
+            <div className="h-16 w-16 mx-auto rounded-full bg-slate-500/20 flex items-center justify-center">
+              <HiXCircle className="h-10 w-10 text-slate-400" />
+            </div>
+            <div className="space-y-2">
+              <h1 className="text-2xl font-bold text-[var(--text)]">Payment Cancelled</h1>
+              <p className="text-[var(--text-mute)]">
+                No payment was made. Your plan remains unchanged.
+              </p>
+              <p className="text-sm text-[var(--text-mute)]">
+                Redirecting to billing settings in {countdown}...
+              </p>
+            </div>
+            <button
+              onClick={() => router.replace("/settings?tab=billing")}
+              className="btn btn-primary px-10 py-4 text-base"
+            >
+              Billing Settings
+            </button>
+          </div>
+        )}
+
         {status === "error" && (
           <div className="space-y-6">
             <div className="h-16 w-16 mx-auto rounded-full bg-rose-500/20 flex items-center justify-center">
@@ -79,6 +180,9 @@ function PaymentSuccessInner() {
             <div className="space-y-2">
               <h1 className="text-2xl font-bold text-[var(--text)]">Something went wrong</h1>
               <p className="text-[var(--text-mute)]">{errorMsg || "Please check your payment status in settings."}</p>
+              <p className="text-sm text-[var(--text-mute)]">
+                Redirecting to billing settings in {countdown}...
+              </p>
             </div>
             <div className="flex gap-4 justify-center">
               <button

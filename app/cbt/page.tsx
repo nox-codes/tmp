@@ -9,85 +9,123 @@ import {
   HiOutlineChevronRight,
   HiOutlineCalendar,
   HiOutlineCheckCircle,
+  HiOutlineExclamationCircle,
 } from "react-icons/hi"
-import { fetchQuestions, QuestionApiItem } from "../lib/api"
+import { fetchCourses, type CourseApiItem } from "../lib/api"
+import { useAuth } from "../lib/auth-context"
 import ComingSoonAction from "../componenets/ComingSoonAction"
 
-const courses = [
-  { code: "CSC 312", name: "Algorithms & Complexity", available: 120, attempts: 8, best: 88 },
-  { code: "MTH 201", name: "Calculus II",             available: 180, attempts: 12, best: 84 },
-  { code: "STA 211", name: "Probability & Stats",     available: 96,  attempts: 5,  best: 92 },
-  { code: "PHY 102", name: "General Physics II",      available: 110, attempts: 3,  best: 71 },
-  { code: "CSC 314", name: "Operating Systems",       available: 80,  attempts: 0,  best: 0  },
-  { code: "ENG 201", name: "Use of English II",       available: 60,  attempts: 2,  best: 76 },
-]
+type CbtResult = {
+  courseCode: string
+  courseName: string
+  score: number
+  correct: number
+  wrong: number
+  skipped: number
+  total: number
+  duration: string
+  timestamp: string
+}
 
-const history = [
-  { id: 1, course: "CSC 312 · Algorithms",   date: "Today · 2hrs ago",   score: 88, questions: 40, time: "52 min", status: "Passed" },
-  { id: 2, course: "MTH 201 · Calculus II",  date: "Yesterday",           score: 76, questions: 30, time: "45 min", status: "Passed" },
-  { id: 3, course: "STA 211 · Probability",  date: "2 days ago",          score: 92, questions: 25, time: "38 min", status: "Passed" },
-  { id: 4, course: "PHY 102 · Physics II",   date: "Last week",           score: 58, questions: 30, time: "60 min", status: "Failed" },
-]
+function loadHistory(): CbtResult[] {
+  if (typeof window === "undefined") return []
+  try {
+    const raw = localStorage.getItem("cbt_history")
+    return raw ? JSON.parse(raw) : []
+  } catch {
+    return []
+  }
+}
+
+function computeStats(history: CbtResult[]) {
+  const total = history.length
+  if (total === 0) {
+    return { totalAttempts: 0, avgScore: 0, totalTime: "0 hr", streak: 0 }
+  }
+  const avgScore = Math.round(history.reduce((s, r) => s + r.score, 0) / total)
+  const totalMinutes = history.reduce((s, r) => {
+    const m = parseInt(r.duration)
+    return s + (isNaN(m) ? 0 : m)
+  }, 0)
+  const totalHours = Math.round(totalMinutes / 60)
+  const streak = 0
+  return {
+    totalAttempts: total,
+    avgScore,
+    totalTime: `${totalHours} hr`,
+    streak,
+  }
+}
 
 export default function CBTPage() {
-  const [selectedCourse, setSelectedCourse] = useState("CSC 312")
+  const { user } = useAuth()
+  const tier = user?.tier ?? "FREE"
+  const dailyLimit = tier === "FREE" ? 20 : Infinity
+
+  const [selectedCourse, setSelectedCourse] = useState("")
   const [duration, setDuration] = useState(60)
-  const [numQs, setNumQs] = useState(40)
+  const [numQs, setNumQs] = useState(20)
   const [mode, setMode] = useState<"timed" | "practice">("timed")
-  const [backendQuestions, setBackendQuestions] = useState<QuestionApiItem[]>([])
-  const [sourceNote, setSourceNote] = useState("Showing sample question banks while backend data loads.")
+  const [courses, setCourses] = useState<CourseApiItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
+  const [history, setHistory] = useState<CbtResult[]>([])
 
   useEffect(() => {
     let active = true
-
-    async function loadQuestions() {
+    async function load() {
       try {
-        const questions = await fetchQuestions()
+        const data = await fetchCourses()
         if (!active) return
-
-        if (Array.isArray(questions) && questions.length > 0) {
-          setBackendQuestions(questions)
-          setSourceNote("Synced with backend question data.")
-          const firstCourse = questions[0]?.course?.code
-          if (firstCourse) setSelectedCourse(firstCourse)
+        if (Array.isArray(data) && data.length > 0) {
+          setCourses(data)
+          setSelectedCourse(data[0].code)
         } else {
-          setSourceNote("No backend questions yet. Showing sample question banks.")
+          setError("No courses available yet.")
         }
       } catch {
-        if (active) setSourceNote("Backend questions unavailable. Showing sample question banks.")
+        if (active) setError("Could not load courses from server.")
+      } finally {
+        if (active) setLoading(false)
       }
     }
-
-    loadQuestions()
-    return () => {
-      active = false
-    }
+    load()
+    setHistory(loadHistory())
+    return () => { active = false }
   }, [])
 
-  const courseOptions = useMemo(() => {
-    if (backendQuestions.length === 0) return courses
+  const stats = useMemo(() => computeStats(history), [history])
 
-    const byCode = new Map<string, { code: string; name: string; available: number; attempts: number; best: number }>()
+  const selected = courses.find(c => c.code === selectedCourse) ?? courses[0]
+  const availableCount = selected?.questions?.length ?? 0
+  const maxSelectable = Math.min(availableCount, dailyLimit)
+  const selectedQuestionCount = Math.min(numQs, maxSelectable)
 
-    backendQuestions.forEach((question) => {
-      const code = question.course?.code ?? "COURSE"
-      const name = question.course?.title ?? "Backend question bank"
-      const current = byCode.get(code)
-      byCode.set(code, {
-        code,
-        name,
-        available: (current?.available ?? 0) + 1,
-        attempts: 0,
-        best: 0,
-      })
-    })
+  if (loading) {
+    return (
+      <div className="dash">
+        <div className="dash-welcome">
+          <div>
+            <h1 className="dash-welcome-title display">CBT Mode</h1>
+            <p className="dash-welcome-sub">Loading courses...</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
-    return Array.from(byCode.values())
-  }, [backendQuestions])
-
-  const selected = courseOptions.find(c => c.code === selectedCourse) ?? courseOptions[0] ?? courses[0]
-  const maxQuestions = Math.max(10, Math.min(80, selected.available))
-  const selectedQuestionCount = Math.min(numQs, maxQuestions)
+  if (error) {
+    return (
+      <div className="dash">
+        <div className="dash-welcome">
+          <div>
+            <h1 className="dash-welcome-title display">CBT Mode</h1>
+            <p className="dash-welcome-sub text-rose-400">{error}</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="dash">
@@ -97,14 +135,17 @@ export default function CBTPage() {
           <p className="dash-welcome-sub">
             Practice with real UNILAG past questions under exam conditions.
           </p>
-          <p className="dash-welcome-sub dash-welcome-note">{sourceNote}</p>
+          {tier === "FREE" && (
+            <p className="dash-welcome-sub dash-welcome-note">
+              Free plan: {dailyLimit} questions per session.
+            </p>
+          )}
         </div>
         <div className="dash-welcome-actions">
-          <span className="cbt-streak"><HiOutlineLightningBolt /> 12-day streak</span>
+          <span className="cbt-streak"><HiOutlineLightningBolt /> {stats.streak}-day streak</span>
         </div>
       </div>
 
-      {/* Quick stats */}
       <section className="dash-stats">
         <div className="dash-stat">
           <div className="dash-stat-icon bg-teal-500/10 text-teal-400">
@@ -112,9 +153,8 @@ export default function CBTPage() {
           </div>
           <div className="dash-stat-info">
             <p className="dash-stat-label">Total attempts</p>
-            <p className="dash-stat-value">30</p>
+            <p className="dash-stat-value">{stats.totalAttempts}</p>
           </div>
-          <span className="dash-stat-trend">+8 wk</span>
         </div>
         <div className="dash-stat">
           <div className="dash-stat-icon bg-emerald-500/10 text-emerald-400">
@@ -122,9 +162,8 @@ export default function CBTPage() {
           </div>
           <div className="dash-stat-info">
             <p className="dash-stat-label">Average score</p>
-            <p className="dash-stat-value">82%</p>
+            <p className="dash-stat-value">{stats.avgScore}%</p>
           </div>
-          <span className="dash-stat-trend">+6%</span>
         </div>
         <div className="dash-stat">
           <div className="dash-stat-icon bg-amber-500/10 text-amber-400">
@@ -132,9 +171,8 @@ export default function CBTPage() {
           </div>
           <div className="dash-stat-info">
             <p className="dash-stat-label">Time practiced</p>
-            <p className="dash-stat-value">14 hr</p>
+            <p className="dash-stat-value">{stats.totalTime}</p>
           </div>
-          <span className="dash-stat-trend">+2h</span>
         </div>
         <div className="dash-stat">
           <div className="dash-stat-icon bg-violet-500/10 text-violet-400">
@@ -142,14 +180,17 @@ export default function CBTPage() {
           </div>
           <div className="dash-stat-info">
             <p className="dash-stat-label">This week</p>
-            <p className="dash-stat-value">5 tests</p>
+            <p className="dash-stat-value">{history.filter(r => {
+              const d = new Date(r.timestamp)
+              const now = new Date()
+              const weekAgo = new Date(now.getTime() - 7 * 86400000)
+              return d >= weekAgo
+            }).length} tests</p>
           </div>
-          <span className="dash-stat-trend">🔥</span>
         </div>
       </section>
 
       <div className="cbt-layout">
-        {/* Setup panel */}
         <section className="cbt-setup">
           <div className="cbt-setup-inner">
           <div className="dash-card-head">
@@ -159,26 +200,28 @@ export default function CBTPage() {
             </div>
           </div>
 
-          {/* Course picker */}
           <div className="cbt-field">
             <label className="cbt-field-label">Course</label>
-            <div className="cbt-course-grid">
-              {courseOptions.map((c) => (
-                <button
-                  key={c.code}
-                  type="button"
-                  onClick={() => setSelectedCourse(c.code)}
-                  className={`cbt-course-chip ${selectedCourse === c.code ? "cbt-course-chip-active" : ""}`}
-                >
-                  <span className="cbt-course-chip-code">{c.code}</span>
-                  <span className="cbt-course-chip-name">{c.name}</span>
-                  <span className="cbt-course-chip-meta">{c.available} questions</span>
-                </button>
-              ))}
-            </div>
+            {courses.length === 0 ? (
+              <p className="text-[var(--text-mute)] text-sm">No courses loaded.</p>
+            ) : (
+              <div className="cbt-course-grid">
+                {courses.map((c) => (
+                  <button
+                    key={c.code}
+                    type="button"
+                    onClick={() => setSelectedCourse(c.code)}
+                    className={`cbt-course-chip ${selectedCourse === c.code ? "cbt-course-chip-active" : ""}`}
+                  >
+                    <span className="cbt-course-chip-code">{c.code}</span>
+                    <span className="cbt-course-chip-name">{c.title}</span>
+                    <span className="cbt-course-chip-meta">{c.questions?.length ?? 0} questions</span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
-          {/* Mode */}
           <div className="cbt-field">
             <label className="cbt-field-label">Mode</label>
             <div className="cbt-mode-grid">
@@ -207,26 +250,31 @@ export default function CBTPage() {
             </div>
           </div>
 
-          {/* Sliders */}
           <div className="cbt-slider-row">
             <div className="cbt-field">
               <div className="cbt-slider-head">
                 <label className="cbt-field-label">Questions</label>
-                <span className="cbt-slider-value">{numQs}</span>
+                <span className="cbt-slider-value">{selectedQuestionCount}</span>
               </div>
               <input
                 type="range"
-                min={10}
-                max={maxQuestions}
+                min={5}
+                max={maxSelectable || 5}
                 step={5}
                 value={selectedQuestionCount}
                 onChange={(e) => setNumQs(Number(e.target.value))}
                 className="cbt-slider"
               />
               <div className="cbt-slider-ticks">
-                <span>10</span>
-                <span>80</span>
+                <span>5</span>
+                <span>{maxSelectable || 5}</span>
               </div>
+              {tier === "FREE" && availableCount > 20 && (
+                <p className="text-xs text-[var(--text-mute)] mt-1">
+                  <HiOutlineExclamationCircle className="inline h-3 w-3 mr-1" />
+                  Free plan: capped at {dailyLimit} questions. Upgrade for unlimited.
+                </p>
+              )}
             </div>
 
             <div className="cbt-field">
@@ -251,26 +299,30 @@ export default function CBTPage() {
             </div>
           </div>
 
-          {/* Summary + start */}
           <div className="cbt-summary">
             <div>
               <p className="cbt-summary-label">You&apos;re about to start</p>
               <p className="cbt-summary-text">
-                <strong>{selectedQuestionCount}</strong> {selected.code} questions ·{" "}
+                <strong>{selectedQuestionCount}</strong> {selected?.code ?? ""} questions ·{" "}
                 <strong>{mode === "timed" ? `${duration} min timer` : "Practice mode"}</strong>
               </p>
             </div>
-            <Link
-              href={`/cbt/exam?course=${encodeURIComponent(selected.code)}&name=${encodeURIComponent(selected.name)}&q=${selectedQuestionCount}&dur=${duration}&mode=${mode}`}
-              className="btn btn-primary"
-            >
-              <HiOutlineLightningBolt /> Start CBT
-            </Link>
+            {selected ? (
+              <Link
+                href={`/cbt/exam?course=${encodeURIComponent(selected.code)}&name=${encodeURIComponent(selected.title)}&q=${selectedQuestionCount}&dur=${duration}&mode=${mode}`}
+                className="btn btn-primary"
+              >
+                <HiOutlineLightningBolt /> Start CBT
+              </Link>
+            ) : (
+              <button disabled className="btn btn-primary opacity-50 cursor-not-allowed">
+                <HiOutlineLightningBolt /> Start CBT
+              </button>
+            )}
           </div>
           </div>
         </section>
 
-        {/* History */}
         <section className="cbt-history">
           <div className="dash-card-head">
             <div>
@@ -281,24 +333,28 @@ export default function CBTPage() {
               All <HiOutlineChevronRight />
             </ComingSoonAction>
           </div>
-          <ul className="cbt-history-list">
-            {history.map((h) => (
-              <li key={h.id} className="cbt-history-item">
-                <div className="cbt-history-left">
-                  <p className="cbt-history-course">{h.course}</p>
-                  <p className="cbt-history-meta">{h.date} · {h.questions} q · {h.time}</p>
-                </div>
-                <div className="cbt-history-right">
-                  <span className={`cbt-history-score ${h.score >= 70 ? "cbt-score-pass" : "cbt-score-fail"}`}>
-                    {h.score}%
-                  </span>
-                  <ComingSoonAction className="cbt-history-link" title="Attempt review">
-                    Review
-                  </ComingSoonAction>
-                </div>
-              </li>
-            ))}
-          </ul>
+          {history.length === 0 ? (
+            <p className="text-[var(--text-mute)] text-sm p-6">No attempts yet. Start your first CBT above.</p>
+          ) : (
+            <ul className="cbt-history-list">
+              {history.slice(-5).reverse().map((h, i) => (
+                <li key={i} className="cbt-history-item">
+                  <div className="cbt-history-left">
+                    <p className="cbt-history-course">{h.courseCode} — {h.courseName}</p>
+                    <p className="cbt-history-meta">{h.duration} · {h.total} q</p>
+                  </div>
+                  <div className="cbt-history-right">
+                    <span className={`cbt-history-score ${h.score >= 70 ? "cbt-score-pass" : "cbt-score-fail"}`}>
+                      {h.score}%
+                    </span>
+                    <ComingSoonAction className="cbt-history-link" title="Attempt review">
+                      Review
+                    </ComingSoonAction>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
       </div>
     </div>

@@ -6765,6 +6765,28 @@ a {
   font-weight: var(--font-weight-semibold);
   color: var(--color-emerald-400);
 }
+.dash-trend-down {
+  align-items: center;
+  gap: calc(var(--spacing) * 1);
+  background-color: #f43f5e1a;
+  border-radius: 3.40282e38px;
+  display: inline-flex;
+  padding-inline: calc(var(--spacing) * 2.5);
+  padding-block: calc(var(--spacing) * 1);
+  --tw-font-weight: var(--font-weight-semibold);
+  font-size: 11px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-rose-400);
+}
+@supports (color: color-mix(in lab, red, red)) {
+  .dash-trend-down {
+    background-color: color-mix(
+      in oklab,
+      var(--color-rose-500) 10%,
+      transparent
+    );
+  }
+}
 .dash-gpa-chart {
   position: relative;
 }

@@ -1,3 +1,6 @@
+'use client'
+
+import { useMemo } from "react"
 import {
   HiOutlineTrendingUp,
   HiOutlineAcademicCap,
@@ -5,79 +8,128 @@ import {
   HiOutlineLightningBolt,
 } from "react-icons/hi"
 
-const weeklyHours = [3, 5, 2, 6, 4, 7, 5]
-const weekDays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+type CbtResult = {
+  courseCode: string
+  courseName: string
+  score: number
+  correct: number
+  wrong: number
+  skipped: number
+  total: number
+  duration: string
+  timestamp: string
+}
 
-const subjects = [
-  { name: "Algorithms (CSC 312)", mastery: 88, color: "bg-teal-400"   },
-  { name: "Calculus II",          mastery: 74, color: "bg-amber-400"  },
-  { name: "Probability (STA 211)",mastery: 92, color: "bg-emerald-400"},
-  { name: "Operating Systems",    mastery: 55, color: "bg-violet-400" },
-  { name: "Physics II",           mastery: 41, color: "bg-rose-400"   },
-]
-
-const strengths = [
-  { topic: "Sorting & Searching",   level: 95 },
-  { topic: "Trees",                 level: 92 },
-  { topic: "Hypothesis Testing",    level: 88 },
-]
-const weaknesses = [
-  { topic: "Dynamic Programming",   level: 48 },
-  { topic: "Vector Calculus",       level: 52 },
-  { topic: "Process Scheduling",    level: 38 },
-]
-
-const sessions = [
-  { date: "Today",     items: ["52 min · CSC 312 CBT — 88%", "30 min · Algorithms reading"] },
-  { date: "Yesterday", items: ["45 min · MTH 201 CBT — 76%", "1h · Tutorial group"] },
-  { date: "Mon",       items: ["38 min · STA 211 CBT — 92%"] },
-]
-
-const max = Math.max(...weeklyHours)
+function loadHistory(): CbtResult[] {
+  if (typeof window === "undefined") return []
+  try {
+    const raw = localStorage.getItem("cbt_history")
+    return raw ? JSON.parse(raw) : []
+  } catch {
+    return []
+  }
+}
 
 export default function Analytics() {
+  const history = useMemo(() => loadHistory(), [])
+  const totalAttempts = history.length
+  const avgScore = totalAttempts > 0 ? Math.round(history.reduce((s, r) => s + r.score, 0) / totalAttempts) : 0
+  const passed = history.filter(r => r.score >= 70).length
+  const passRate = totalAttempts > 0 ? Math.round((passed / totalAttempts) * 100) : 0
+  const totalMinutes = history.reduce((s, r) => {
+    const m = parseInt(r.duration)
+    return s + (isNaN(m) ? 0 : m)
+  }, 0)
+
+  const subjectMastery = useMemo(() => {
+    const map = new Map<string, number[]>()
+    history.forEach(r => {
+      const existing = map.get(r.courseCode) ?? []
+      existing.push(r.score)
+      map.set(r.courseCode, existing)
+    })
+    return Array.from(map.entries()).map(([code, scores]) => ({
+      code,
+      mastery: Math.round(scores.reduce((a, b) => a + b, 0) / scores.length),
+    })).sort((a, b) => b.mastery - a.mastery)
+  }, [history])
+
+  const weeklyHours = useMemo(() => {
+    const days = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date()
+      d.setDate(d.getDate() - (6 - i))
+      return d.toDateString()
+    })
+    return days.map(day => {
+      const dayResults = history.filter(r => new Date(r.timestamp).toDateString() === day)
+      return dayResults.length * Math.round(avgScore / 10) || 0
+    })
+  }, [history, avgScore])
+
+  const weekDays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+  const maxBar = Math.max(...weeklyHours, 1)
+
+  const strengths = useMemo(() => {
+    return subjectMastery.filter(s => s.mastery >= 70).slice(0, 3)
+  }, [subjectMastery])
+
+  const weaknesses = useMemo(() => {
+    return subjectMastery.filter(s => s.mastery < 70).slice(0, 3)
+  }, [subjectMastery])
+
+  const recentSessions = useMemo(() => {
+    const map = new Map<string, string[]>()
+    history.slice(-10).forEach(r => {
+      const d = new Date(r.timestamp)
+      const label = d.toDateString() === new Date().toDateString() ? "Today" : d.toDateString() === new Date(Date.now() - 86400000).toDateString() ? "Yesterday" : d.toLocaleDateString()
+      const existing = map.get(label) ?? []
+      existing.push(`${r.duration} · ${r.courseCode} CBT — ${r.score}%`)
+      map.set(label, existing)
+    })
+    return Array.from(map.entries()).slice(0, 3)
+  }, [history])
+
   return (
     <div className="dash">
       <div className="dash-welcome">
         <div>
           <h1 className="dash-welcome-title display">Analytics</h1>
           <p className="dash-welcome-sub">
-            Find your patterns. Double down on what works.
+            {totalAttempts > 0 ? "Find your patterns. Double down on what works." : "Complete a CBT to see your analytics."}
           </p>
         </div>
       </div>
 
-      {/* Top stats */}
       <section className="dash-stats">
         <div className="dash-stat">
           <div className="dash-stat-icon bg-teal-500/10 text-teal-400">
             <HiOutlineAcademicCap className="h-5 w-5" />
           </div>
           <div className="dash-stat-info">
-            <p className="dash-stat-label">Predicted GPA</p>
-            <p className="dash-stat-value">4.45</p>
+            <p className="dash-stat-label">Total attempts</p>
+            <p className="dash-stat-value">{totalAttempts}</p>
           </div>
-          <span className="dash-stat-trend">+0.13</span>
+          <span className="dash-stat-trend">{totalAttempts > 0 ? "lifetime" : "—"}</span>
         </div>
         <div className="dash-stat">
           <div className="dash-stat-icon bg-amber-500/10 text-amber-400">
             <HiOutlineClock className="h-5 w-5" />
           </div>
           <div className="dash-stat-info">
-            <p className="dash-stat-label">Study hrs / wk</p>
-            <p className="dash-stat-value">23</p>
+            <p className="dash-stat-label">Study hrs</p>
+            <p className="dash-stat-value">{Math.round(totalMinutes / 60)}</p>
           </div>
-          <span className="dash-stat-trend">+3h</span>
+          <span className="dash-stat-trend">{totalMinutes > 0 ? "total" : "—"}</span>
         </div>
         <div className="dash-stat">
           <div className="dash-stat-icon bg-emerald-500/10 text-emerald-400">
             <HiOutlineTrendingUp className="h-5 w-5" />
           </div>
           <div className="dash-stat-info">
-            <p className="dash-stat-label">Improvement</p>
-            <p className="dash-stat-value">+12%</p>
+            <p className="dash-stat-label">Avg score</p>
+            <p className="dash-stat-value">{avgScore}%</p>
           </div>
-          <span className="dash-stat-trend">30d</span>
+          <span className="dash-stat-trend">{totalAttempts > 0 ? `${passRate}% pass` : "—"}</span>
         </div>
         <div className="dash-stat">
           <div className="dash-stat-icon bg-violet-500/10 text-violet-400">
@@ -85,19 +137,18 @@ export default function Analytics() {
           </div>
           <div className="dash-stat-info">
             <p className="dash-stat-label">CBT pass rate</p>
-            <p className="dash-stat-value">94%</p>
+            <p className="dash-stat-value">{passRate}%</p>
           </div>
-          <span className="dash-stat-trend">↑</span>
+          <span className="dash-stat-trend">{passed}/{totalAttempts}</span>
         </div>
       </section>
 
       <div className="dash-grid">
-        {/* Weekly hours bar chart */}
         <section className="dash-card dash-card-wide">
           <div className="dash-card-head">
             <div>
               <h2 className="dash-card-title">Study hours this week</h2>
-              <p className="dash-card-sub">23 hours total · best day: Saturday</p>
+              <p className="dash-card-sub">{totalMinutes > 0 ? `${Math.round(totalMinutes / 60)} hours total` : "No data yet"}</p>
             </div>
           </div>
           <div className="analytics-bars">
@@ -106,7 +157,7 @@ export default function Analytics() {
                 <span className="analytics-bar-val">{h}h</span>
                 <span
                   className="analytics-bar"
-                  style={{ height: `${(h / max) * 100}%` }}
+                  style={{ height: `${(h / maxBar) * 100}%` }}
                 />
                 <span className="analytics-bar-label">{weekDays[i]}</span>
               </div>
@@ -114,7 +165,6 @@ export default function Analytics() {
           </div>
         </section>
 
-        {/* Subject mastery */}
         <section className="dash-card">
           <div className="dash-card-head">
             <div>
@@ -122,40 +172,49 @@ export default function Analytics() {
               <p className="dash-card-sub">Based on CBT performance</p>
             </div>
           </div>
-          <ul className="analytics-subjects">
-            {subjects.map((s) => (
-              <li key={s.name} className="analytics-subject">
-                <div className="analytics-subject-head">
-                  <span>{s.name}</span>
-                  <span>{s.mastery}%</span>
-                </div>
-                <div className="dash-progress">
-                  <span className={`dash-progress-fill ${s.color}`} style={{ width: `${s.mastery}%` }} />
-                </div>
-              </li>
-            ))}
-          </ul>
+          {subjectMastery.length === 0 ? (
+            <p className="text-[var(--text-mute)] text-sm p-6">No CBT results yet.</p>
+          ) : (
+            <ul className="analytics-subjects">
+              {subjectMastery.map((s) => (
+                <li key={s.code} className="analytics-subject">
+                  <div className="analytics-subject-head">
+                    <span>{s.code}</span>
+                    <span>{s.mastery}%</span>
+                  </div>
+                  <div className="dash-progress">
+                    <span
+                      className={`dash-progress-fill ${s.mastery >= 70 ? "bg-emerald-400" : s.mastery >= 50 ? "bg-amber-400" : "bg-rose-400"}`}
+                      style={{ width: `${s.mastery}%` }}
+                    />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
 
-        {/* Strengths */}
         <section className="dash-card">
           <div className="dash-card-head">
             <div>
               <h2 className="dash-card-title">Strengths</h2>
-              <p className="dash-card-sub">Top 3 topics</p>
+              <p className="dash-card-sub">Top topics</p>
             </div>
           </div>
-          <ul className="analytics-tags">
-            {strengths.map((s) => (
-              <li key={s.topic} className="analytics-tag analytics-tag-good">
-                <span>{s.topic}</span>
-                <span>{s.level}%</span>
-              </li>
-            ))}
-          </ul>
+          {strengths.length === 0 ? (
+            <p className="text-[var(--text-mute)] text-sm p-6">No data yet.</p>
+          ) : (
+            <ul className="analytics-tags">
+              {strengths.map((s) => (
+                <li key={s.code} className="analytics-tag analytics-tag-good">
+                  <span>{s.code}</span>
+                  <span>{s.mastery}%</span>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
 
-        {/* Weaknesses */}
         <section className="dash-card">
           <div className="dash-card-head">
             <div>
@@ -163,34 +222,41 @@ export default function Analytics() {
               <p className="dash-card-sub">Where to spend study time</p>
             </div>
           </div>
-          <ul className="analytics-tags">
-            {weaknesses.map((s) => (
-              <li key={s.topic} className="analytics-tag analytics-tag-bad">
-                <span>{s.topic}</span>
-                <span>{s.level}%</span>
-              </li>
-            ))}
-          </ul>
+          {weaknesses.length === 0 ? (
+            <p className="text-[var(--text-mute)] text-sm p-6">No data yet.</p>
+          ) : (
+            <ul className="analytics-tags">
+              {weaknesses.map((s) => (
+                <li key={s.code} className="analytics-tag analytics-tag-bad">
+                  <span>{s.code}</span>
+                  <span>{s.mastery}%</span>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
 
-        {/* Recent sessions */}
         <section className="dash-card dash-card-wide">
           <div className="dash-card-head">
             <div>
               <h2 className="dash-card-title">Recent sessions</h2>
-              <p className="dash-card-sub">Last 3 study days</p>
+              <p className="dash-card-sub">Last study days</p>
             </div>
           </div>
-          <ul className="analytics-sessions">
-            {sessions.map((s) => (
-              <li key={s.date}>
-                <p className="analytics-session-date">{s.date}</p>
-                <ul className="analytics-session-items">
-                  {s.items.map((it) => <li key={it}>{it}</li>)}
-                </ul>
-              </li>
-            ))}
-          </ul>
+          {recentSessions.length === 0 ? (
+            <p className="text-[var(--text-mute)] text-sm p-6">No sessions yet.</p>
+          ) : (
+            <ul className="analytics-sessions">
+              {recentSessions.map(([date, items]) => (
+                <li key={date}>
+                  <p className="analytics-session-date">{date}</p>
+                  <ul className="analytics-session-items">
+                    {items.map((it, i) => <li key={i}>{it}</li>)}
+                  </ul>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
       </div>
     </div>

@@ -36,23 +36,29 @@ export default function NotificationPopup({ onClose }: { onClose: () => void }) 
         <p className="notification-popup-title">Notifications</p>
         <span className="notification-popup-count">{unread} new</span>
       </div>
-      <ul className="notification-popup-list">
-        {recent.map((n) => {
-          const { Icon, tone } = kindConfig[n.kind]
-          return (
-            <li key={n.id} className={`notification-popup-row ${!n.read ? "notification-popup-row-unread" : ""}`}>
-              <span className={`notification-popup-icon notification-icon-${tone}`}>
-                <Icon className="notification-popup-icon-svg" />
-              </span>
-              <div className="notification-popup-copy">
-                <p className="notification-popup-text">{n.text}</p>
-                <p className="notification-popup-time">{n.time}</p>
-              </div>
-              {!n.read && <span className="notification-popup-dot" />}
-            </li>
-          )
-        })}
-      </ul>
+      {recent.length === 0 ? (
+        <div className="p-8 text-center">
+          <p className="text-[var(--text-mute)] text-sm">No notifications yet.</p>
+        </div>
+      ) : (
+        <ul className="notification-popup-list">
+          {recent.map((n) => {
+            const { Icon, tone } = kindConfig[n.kind]
+            return (
+              <li key={n.id} className={`notification-popup-row ${!n.read ? "notification-popup-row-unread" : ""}`}>
+                <span className={`notification-popup-icon notification-icon-${tone}`}>
+                  <Icon className="notification-popup-icon-svg" />
+                </span>
+                <div className="notification-popup-copy">
+                  <p className="notification-popup-text">{n.text}</p>
+                  <p className="notification-popup-time">{n.time}</p>
+                </div>
+                {!n.read && <span className="notification-popup-dot" />}
+              </li>
+            )
+          })}
+        </ul>
+      )}
       <div className="notification-popup-foot">
         <Link
           href="/notifications"

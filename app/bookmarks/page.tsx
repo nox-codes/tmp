@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import {
   HiOutlineBookmark,
   HiOutlineDocumentText,
@@ -23,16 +23,15 @@ type Bookmark = {
   tag?: string
 }
 
-const ITEMS: Bookmark[] = [
-  { id: 1, kind: "question", title: "Topological sort vs Dijkstra", course: "CSC 312", excerpt: "Both can run on DAGs but they answer different questions...", date: "Today",     tag: "Wrong on CBT" },
-  { id: 2, kind: "note",     title: "Calculus II — chain rule cheat sheet", course: "MTH 201", excerpt: "Always start with the outer function, then multiply...", date: "Yesterday" },
-  { id: 3, kind: "material", title: "Lecture 4 — Process scheduling PDF", course: "CSC 314", excerpt: "Round robin, SJF, priority — comparison table on p.12", date: "2 days ago" },
-  { id: 4, kind: "question", title: "Stability of merge sort proof",       course: "CSC 312", excerpt: "Merge sort is stable because in the merge step, equal elements...", date: "3 days ago", tag: "For revision" },
-  { id: 5, kind: "note",     title: "STA 211 — hypothesis testing flow",   course: "STA 211", excerpt: "1. State H0 and H1. 2. Choose significance level...", date: "1 week ago" },
-  { id: 6, kind: "material", title: "Past Q 2022 — Physics II",            course: "PHY 102", excerpt: "Annotated past paper with full worked solutions", date: "1 week ago" },
-  { id: 7, kind: "question", title: "Dynamic programming subproblems",     course: "CSC 312", excerpt: "Identify overlapping subproblems by drawing the recursion tree...", date: "2 weeks ago", tag: "Weak topic" },
-  { id: 8, kind: "note",     title: "Linear algebra eigenvalue intuition", course: "MTH 202", excerpt: "An eigenvector is a direction the matrix only stretches...", date: "2 weeks ago" },
-]
+function loadBookmarks(): Bookmark[] {
+  if (typeof window === "undefined") return []
+  try {
+    const raw = localStorage.getItem("bookmarks")
+    return raw ? JSON.parse(raw) : []
+  } catch {
+    return []
+  }
+}
 
 const KIND_ICON: Record<Kind, React.ComponentType<{ className?: string }>> = {
   note: HiOutlineBookmark,
@@ -56,9 +55,14 @@ const tabs: { key: Kind | "all"; label: string }[] = [
 export default function Bookmarks() {
   const [tab, setTab] = useState<Kind | "all">("all")
   const [q, setQ] = useState("")
+  const [items, setItems] = useState<Bookmark[]>([])
+
+  useEffect(() => {
+    setItems(loadBookmarks())
+  }, [])
 
   const filtered = useMemo(() => {
-    return ITEMS.filter((b) => {
+    return items.filter((b) => {
       if (tab !== "all" && b.kind !== tab) return false
       if (q) {
         const s = q.toLowerCase()
@@ -66,14 +70,14 @@ export default function Bookmarks() {
       }
       return true
     })
-  }, [tab, q])
+  }, [tab, q, items])
 
-  const counts: Record<string, number> = {
-    all:      ITEMS.length,
-    note:     ITEMS.filter(b => b.kind === "note").length,
-    question: ITEMS.filter(b => b.kind === "question").length,
-    material: ITEMS.filter(b => b.kind === "material").length,
-  }
+  const counts = useMemo(() => ({
+    all: items.length,
+    note: items.filter(b => b.kind === "note").length,
+    question: items.filter(b => b.kind === "question").length,
+    material: items.filter(b => b.kind === "material").length,
+  }), [items])
 
   return (
     <div className="dash">
@@ -81,12 +85,13 @@ export default function Bookmarks() {
         <div>
           <h1 className="dash-welcome-title display">Bookmarks</h1>
           <p className="dash-welcome-sub">
-            {ITEMS.length} saved · the things you wanted to come back to.
+            {items.length > 0
+              ? `${items.length} saved · the things you wanted to come back to.`
+              : "Nothing saved yet."}
           </p>
         </div>
       </div>
 
-      {/* Controls */}
       <div className="lib-controls">
         <div className="lib-search">
           <HiOutlineSearch className="lib-search-icon" />
@@ -105,7 +110,6 @@ export default function Bookmarks() {
         </div>
       </div>
 
-      {/* List */}
       <div className="bm-list">
         {filtered.map((b) => {
           const Icon = KIND_ICON[b.kind]
@@ -136,7 +140,9 @@ export default function Bookmarks() {
 
         {filtered.length === 0 && (
           <div className="lib-empty">
-            <p>Nothing here yet.</p>
+            {q || tab !== "all"
+              ? <p>No bookmarks match your search.</p>
+              : <p>No bookmarks yet. Save questions and notes while studying to find them here.</p>}
           </div>
         )}
       </div>

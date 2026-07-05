@@ -24,7 +24,7 @@ export default function NotificationsPage() {
       <div className="dash-welcome">
         <div>
           <h1 className="dash-welcome-title display">Notifications</h1>
-          <p className="dash-welcome-sub">{unread} unread · {notifications.length} total</p>
+          <p className="dash-welcome-sub">{notifications.length === 0 ? "You're all caught up" : `${unread} unread · ${notifications.length} total`}</p>
         </div>
       </div>
 
@@ -38,28 +38,35 @@ export default function NotificationsPage() {
             <span className="notifications-count">{unread} unread</span>
           </div>
 
-          <ul className="notifications-list">
-            {notifications.map((n) => {
-              const { Icon, tone } = kindConfig[n.kind]
-              return (
-                <li
-                  key={n.id}
-                  className={`notification-row ${!n.read ? "notification-row-unread" : ""}`}
-                >
-                  <span className={`notification-icon notification-icon-${tone}`}>
-                    <Icon className="notification-icon-svg" />
-                  </span>
+          {notifications.length === 0 ? (
+            <div className="p-10 text-center">
+              <p className="text-[var(--text-mute)] text-base">No notifications yet.</p>
+              <p className="text-[var(--text-faint)] text-sm mt-2">You&apos;ll see updates here when there&apos;s activity.</p>
+            </div>
+          ) : (
+            <ul className="notifications-list">
+              {notifications.map((n) => {
+                const { Icon, tone } = kindConfig[n.kind]
+                return (
+                  <li
+                    key={n.id}
+                    className={`notification-row ${!n.read ? "notification-row-unread" : ""}`}
+                  >
+                    <span className={`notification-icon notification-icon-${tone}`}>
+                      <Icon className="notification-icon-svg" />
+                    </span>
 
-                  <div className="notification-copy">
-                    <p className="notification-title">{n.text}</p>
-                    <p className="notification-time">{n.time}</p>
-                  </div>
+                    <div className="notification-copy">
+                      <p className="notification-title">{n.text}</p>
+                      <p className="notification-time">{n.time}</p>
+                    </div>
 
-                  {!n.read && <span className="notification-dot" aria-label="Unread" />}
-                </li>
-              )
-            })}
-          </ul>
+                    {!n.read && <span className="notification-dot" aria-label="Unread" />}
+                  </li>
+                )
+              })}
+            </ul>
+          )}
         </section>
 
         <aside className="starred-messages-panel" aria-label="Starred messages">
@@ -73,20 +80,26 @@ export default function NotificationsPage() {
             </div>
           </div>
 
-          <ul className="starred-messages-list">
-            {visibleMessages.map((message) => (
-              <li key={message.id} className="starred-message-card">
-                <div className="starred-message-meta">
-                  <span>{message.sender}</span>
-                  <span>{message.time}</span>
-                </div>
-                <p className="starred-message-text">{message.text}</p>
-                <p className="starred-message-course">{message.course}</p>
-              </li>
-            ))}
-          </ul>
+          {starredMessages.length === 0 ? (
+            <div className="p-8 text-center">
+              <p className="text-[var(--text-mute)] text-sm">No starred messages yet.</p>
+            </div>
+          ) : (
+            <ul className="starred-messages-list">
+              {visibleMessages.map((message) => (
+                <li key={message.id} className="starred-message-card">
+                  <div className="starred-message-meta">
+                    <span>{message.sender}</span>
+                    <span>{message.time}</span>
+                  </div>
+                  <p className="starred-message-text">{message.text}</p>
+                  <p className="starred-message-course">{message.course}</p>
+                </li>
+              ))}
+            </ul>
+          )}
 
-          {hasMoreStarred && (
+          {starredMessages.length > 0 && hasMoreStarred && (
             <button
               type="button"
               className="starred-see-more"
