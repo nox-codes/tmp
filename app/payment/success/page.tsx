@@ -3,9 +3,40 @@
 import { Suspense, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { HiCheckCircle, HiXCircle, HiClock } from "react-icons/hi"
-import { fetchUserProfile, updateUserTier } from "../../lib/api"
+import { updateUserTier, getApiBaseUrl } from "../../lib/api"
 import { useAuth } from "../../lib/auth-context"
 import type { Tier } from "../../lib/api"
+
+function getCookie(name: string) {
+  if (typeof document === "undefined") return null
+  const m = document.cookie.match(new RegExp(`(?:^|;\\s*)${name}=([^;]*)`))
+  return m ? decodeURIComponent(m[1]) : null
+}
+
+async function fetchProfileWithRefresh(): Promise<{ tier: Tier } | null> {
+  const raw = getCookie("unilock_session")
+  if (!raw) return null
+  let refreshToken: string | null = null
+  try {
+    const parsed = JSON.parse(raw)
+    refreshToken = parsed?.user?.refreshToken ?? null
+  } catch {}
+  if (!refreshToken) return null
+
+  const refreshRes = await fetch(`${getApiBaseUrl()}/auth/refresh`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ refresh: refreshToken }),
+  })
+  if (!refreshRes.ok) return null
+  const { accessToken } = await refreshRes.json()
+
+  const profileRes = await fetch(`${getApiBaseUrl()}/user/me`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
+  if (!profileRes.ok) return null
+  return profileRes.json()
+}
 
 function PaymentSuccessInner() {
   const router = useRouter()
@@ -46,28 +77,22 @@ function PaymentSuccessInner() {
 
     setStatus("verifying")
 
-    fetchUserProfile()
+    fetchProfileWithRefresh()
       .then(profile => {
-        if (tier && profile.tier === tier) {
+        if (tier && profile && profile.tier === tier) {
           updateUserTier(tier)
           sessionStorage.removeItem("pending_payment")
           refreshUserData()
           setStatus("success")
           setTimeout(() => router.replace("/dashboard"), 3000)
-        } else if (tier && profile.tier !== tier) {
+        } else if (tier && profile && profile.tier !== tier) {
+          setStatus("processing")
+        } else if (tier && !profile) {
           setStatus("processing")
         } else {
           refreshUserData()
           setStatus("success")
           setTimeout(() => router.replace("/dashboard"), 3000)
-        }
-      })
-      .catch(() => {
-        if (tier) {
-          setStatus("processing")
-        } else {
-          setStatus("error")
-          setErrorMsg("Could not verify your payment status.")
         }
       })
   }, [router, refreshUserData, retryKey])
