@@ -109,57 +109,40 @@ function PaymentSuccessInner() {
         const parsed = JSON.parse(pending)
         tier = parsed.tier as Tier
         setExpectedTier(tier)
+        if (tier) updateUserTier(tier)
       } catch {}
+      sessionStorage.removeItem("pending_payment")
     }
-
-    setStatus("verifying")
 
     let cancelled = false
 
     fetchProfileWithRefresh().then(profile => {
       if (cancelled) return
-      if (tier && profile) {
-        if (profile.tier === tier) {
-          updateCookie(tier, profile.accessToken)
-          sessionStorage.removeItem("pending_payment")
-          setStatus("success")
-          setTimeout(() => window.location.replace("/dashboard"), 2000)
-          return
-        }
+      const confirmedTier = tier ?? (profile?.tier ?? null)
+      if (confirmedTier) {
+        updateCookie(confirmedTier, profile?.accessToken)
+      } else if (profile?.accessToken) {
+        updateCookie("HALF", profile.accessToken)
       }
-      if (profile?.accessToken) {
-        updateCookie(tier ?? profile.tier, profile.accessToken)
-      }
-      setTimeout(() => {
-        if (cancelled) return
-        sessionStorage.removeItem("pending_payment")
-        if (tier) updateUserTier(tier)
-        setStatus("processing")
-      }, 5000)
     })
 
-    setTimeout(() => {
+    const redirectTimer = setTimeout(() => {
       if (cancelled) return
-      sessionStorage.removeItem("pending_payment")
-      if (tier) updateUserTier(tier)
-      setStatus("processing")
-    }, 8000)
+      setStatus("success")
+      setTimeout(() => window.location.replace("/dashboard"), 2000)
+    }, 1500)
 
-    return () => { cancelled = true }
+    return () => { cancelled = true; clearTimeout(redirectTimer) }
   }, [retryKey])
 
   useEffect(() => {
-    if (status !== "cancelled" && status !== "error" && status !== "processing") return
-    if (status === "processing") {
-      setCountdown(10)
-    } else {
-      setCountdown(7)
-    }
+    if (status !== "cancelled" && status !== "error") return
+    setCountdown(7)
     const timer = setInterval(() => {
       setCountdown(prev => {
         if (prev <= 1) {
           clearInterval(timer)
-          window.location.replace(status === "processing" ? "/dashboard" : "/settings?tab=billing")
+          window.location.replace("/settings?tab=billing")
           return 0
         }
         return prev - 1
