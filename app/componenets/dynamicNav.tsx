@@ -3,7 +3,7 @@ import { usePathname } from "next/navigation";
 import NavBar from "./navBar";
 import UserNav from "./userNav";
 
-const PUBLIC_ROUTES = ['/', '/about', '/contact', '/login', '/register', '/pricing']
+const PUBLIC_ROUTES = ['/', '/about', '/contact', '/login', '/register', '/pricing', '/terms', '/privacy']
 
 // Routes where we want the page to take over the full screen (no nav).
 const FULLSCREEN_ROUTES = ['/cbt/exam']
