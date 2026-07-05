@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo } from "react"
+import { useEffect, useMemo } from "react"
 import Image from "next/image"
 import {
   HiOutlineMail,
@@ -56,8 +56,12 @@ function loadHistory(): CbtResult[] {
 }
 
 export default function Profile() {
-  const { user, gender } = useAuth()
+  const { user, gender, refreshUserData } = useAuth()
   const avatarSrc = gender === 'female' ? '/female-avatar.svg' : '/male-avatar.svg'
+
+  useEffect(() => {
+    refreshUserData()
+  }, [refreshUserData])
 
   const history = useMemo(() => loadHistory(), [])
   const totalCbts = history.length

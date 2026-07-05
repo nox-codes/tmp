@@ -63,7 +63,6 @@ export default function Library() {
   const [q, setQ] = useState("")
   const [faculty, setFaculty] = useState("All")
   const [level, setLevel] = useState("All")
-  const [tab, setTab] = useState<"all" | "enrolled">("all")
   const [courses, setCourses] = useState<Course[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -91,7 +90,6 @@ export default function Library() {
 
   const filtered = useMemo(() => {
     return courses.filter((c) => {
-      if (tab === "enrolled" && c.progress === 0) return false
       if (faculty !== "All" && c.faculty !== faculty) return false
       if (level !== "All" && c.level !== level) return false
       if (q) {
@@ -100,9 +98,7 @@ export default function Library() {
       }
       return true
     })
-  }, [courses, q, faculty, level, tab])
-
-  const enrolledCount = courses.filter(c => c.progress > 0).length
+  }, [courses, q, faculty, level])
 
   return (
     <div className="dash">
@@ -110,7 +106,7 @@ export default function Library() {
         <div>
           <h1 className="dash-welcome-title display">Course Library</h1>
           <p className="dash-welcome-sub">
-            {loading ? "Loading courses..." : `${courses.length} courses · ${enrolledCount} enrolled · Aligned with UNILAG curriculum`}
+            {loading ? "Loading courses..." : `${courses.length} courses · Aligned with UNILAG curriculum`}
           </p>
         </div>
         <div className="dash-welcome-actions">
@@ -145,20 +141,7 @@ export default function Library() {
           </div>
         </div>
 
-        <div className="lib-tabs">
-          <button
-            className={`lib-tab ${tab === "all" ? "lib-tab-active" : ""}`}
-            onClick={() => setTab("all")}
-          >
-            All courses
-          </button>
-          <button
-            className={`lib-tab ${tab === "enrolled" ? "lib-tab-active" : ""}`}
-            onClick={() => setTab("enrolled")}
-          >
-            Enrolled ({enrolledCount})
-          </button>
-        </div>
+
       </div>
 
       {/* Grid */}
@@ -172,7 +155,7 @@ export default function Library() {
         ) : filtered.length === 0 ? (
           <div className="lib-empty">
             <p>No courses match those filters.</p>
-            <button onClick={() => { setQ(""); setFaculty("All"); setLevel("All"); setTab("all"); }} className="btn btn-secondary btn-sm">
+            <button onClick={() => { setQ(""); setFaculty("All"); setLevel("All"); }} className="btn btn-secondary btn-sm">
               Reset filters
             </button>
           </div>
@@ -197,31 +180,14 @@ export default function Library() {
                 <span><HiOutlineDocumentText /> {c.pastQs} past Qs</span>
               </div>
 
-              {c.progress > 0 ? (
-                <>
-                  <div className="lib-card-progress-info">
-                    <span>Progress</span>
-                    <span>{c.progress}%</span>
-                  </div>
-                  <div className="dash-progress">
-                    <span className={`dash-progress-fill ${PROGRESS_BG[c.color]}`} style={{ width: `${c.progress}%` }} />
-                  </div>
-                  <div className="lib-card-actions">
-                    <ComingSoonAction className="btn btn-secondary btn-sm flex-1">
-                      <HiOutlineClock /> Continue
-                    </ComingSoonAction>
-                    <Link href="/cbt" className="btn btn-primary btn-sm flex-1">
-                      Practice
-                    </Link>
-                  </div>
-                </>
-              ) : (
-                <div className="lib-card-actions lib-card-actions-single">
-                  <ComingSoonAction className="btn btn-primary btn-sm w-full" title="Course enrollment">
-                    Enroll
-                  </ComingSoonAction>
-                </div>
-              )}
+              <div className="lib-card-actions">
+                <Link href={`/cbt?course=${c.code}`} className="btn btn-primary btn-sm flex-1">
+                  <HiOutlineLightningBolt /> Practice
+                </Link>
+                <ComingSoonAction className="btn btn-secondary btn-sm flex-1" title="Study mode">
+                  <HiOutlineBookOpen /> Study
+                </ComingSoonAction>
+              </div>
             </div>
           ))
         )}

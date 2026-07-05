@@ -158,6 +158,10 @@ export default function Dashboard() {
   }, [user])
 
   useEffect(() => {
+    refreshUserData()
+  }, [refreshUserData])
+
+  useEffect(() => {
     let active = true
     async function load() {
       try {

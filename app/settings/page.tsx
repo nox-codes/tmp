@@ -29,7 +29,11 @@ export default function Settings() {
     const tab = new URLSearchParams(window.location.search).get("tab")
     if (tab === "billing") setActive("billing")
   }, [])
-  const { user, gender, setGender, logout } = useAuth()
+  const { user, gender, setGender, logout, refreshUserData } = useAuth()
+
+  useEffect(() => {
+    refreshUserData()
+  }, [refreshUserData])
   const [billingLoading, setBillingLoading] = useState(false)
   const [billingError, setBillingError] = useState("")
 
