@@ -11,7 +11,16 @@ function getCookie(name: string) {
   return m ? decodeURIComponent(m[1]) : null
 }
 
-async function fetchProfileWithRefresh(): Promise<{ tier: Tier } | null> {
+function decodeToken(token: string): Record<string, unknown> | null {
+  try {
+    const payload = token.split(".")[1]
+    return JSON.parse(atob(payload.replace(/-/g, "+").replace(/_/g, "/")))
+  } catch {
+    return null
+  }
+}
+
+async function fetchProfileWithRefresh(): Promise<{ tier: Tier; accessToken: string } | null> {
   const raw = getCookie("unilock_session")
   if (!raw) return null
   let refreshToken: string | null = null
@@ -28,12 +37,31 @@ async function fetchProfileWithRefresh(): Promise<{ tier: Tier } | null> {
   })
   if (!refreshRes.ok) return null
   const { accessToken } = await refreshRes.json()
+  if (!accessToken) return null
+
+  const claims = decodeToken(accessToken)
+  if (claims?.tier && typeof claims.tier === "string") {
+    return { tier: claims.tier as Tier, accessToken }
+  }
 
   const profileRes = await fetch(`${getApiBaseUrl()}/user/me`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   })
   if (!profileRes.ok) return null
-  return profileRes.json()
+  const body = await profileRes.json()
+  return { tier: body.tier, accessToken }
+}
+
+function updateCookie(tier: Tier, accessToken?: string) {
+  const raw = getCookie("unilock_session")
+  if (!raw) return
+  try {
+    const parsed = JSON.parse(raw)
+    parsed.user.tier = tier
+    if (accessToken) parsed.user.accessToken = accessToken
+    const expires = new Date(Date.now() + 30 * 86400000).toUTCString()
+    document.cookie = `unilock_session=${encodeURIComponent(JSON.stringify(parsed))}; expires=${expires}; path=/; SameSite=Lax`
+  } catch {}
 }
 
 function PaymentSuccessInner() {
@@ -76,7 +104,7 @@ function PaymentSuccessInner() {
     fetchProfileWithRefresh()
       .then(profile => {
         if (tier && profile && profile.tier === tier) {
-          updateUserTier(tier)
+          updateCookie(tier, profile.accessToken)
           sessionStorage.removeItem("pending_payment")
           setStatus("success")
           setTimeout(() => window.location.replace("/dashboard"), 3000)
