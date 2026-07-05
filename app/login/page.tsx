@@ -1,7 +1,7 @@
 'use client'
 
 import Link from "next/link"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { FcGoogle } from "react-icons/fc"
 import { HiOutlineEye, HiOutlineEyeOff } from "react-icons/hi"
@@ -15,7 +15,14 @@ export default function Login() {
   const [loading, setLoading] = useState(false)
   const [rememberMe, setRememberMe] = useState(true)
   const router = useRouter()
-  const { login } = useAuth()
+  const { user, loading: authLoading, login } = useAuth()
+
+  useEffect(() => {
+    if (!authLoading && user) router.replace("/dashboard")
+  }, [user, authLoading, router])
+
+  if (authLoading) return null
+  if (user) return null
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()

@@ -1,9 +1,21 @@
 'use client'
 
 import Link from "next/link"
+import { useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { HiXCircle } from "react-icons/hi"
+import { useAuth } from "../../lib/auth-context"
 
 export default function PaymentCancel() {
+  const { user, loading } = useAuth()
+  const router = useRouter()
+
+  useEffect(() => {
+    if (!loading && user) router.replace("/dashboard")
+  }, [user, loading, router])
+
+  if (loading) return null
+  if (user) return null
   return (
     <div className="min-h-screen flex items-center justify-center bg-[var(--bg)] px-6">
       <div className="max-w-md w-full text-center space-y-8">

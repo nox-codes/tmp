@@ -2,11 +2,12 @@
 
 import Link from "next/link"
 import Image from "next/image"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { FcGoogle } from "react-icons/fc"
 import { HiOutlineEye, HiOutlineEyeOff, HiCheck } from "react-icons/hi"
 import { getApiBaseUrl, registerUser, verifyEmail } from "../lib/api"
+import { useAuth } from "../lib/auth-context"
 import ComingSoonAction from "../componenets/ComingSoonAction"
 
 const perks = [
@@ -33,6 +34,14 @@ export default function Register() {
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
   const router = useRouter()
+  const { user, loading: authLoading } = useAuth()
+
+  useEffect(() => {
+    if (!authLoading && user) router.replace("/dashboard")
+  }, [user, authLoading, router])
+
+  if (authLoading) return null
+  if (user) return null
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()

@@ -1,7 +1,7 @@
 'use client'
 
 import Link from "next/link"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import ScrollReveal from "../componenets/scrollReveal"
 import Footer from "../componenets/landing/Footer"
 import { HiCheck, HiX } from "react-icons/hi"
@@ -91,6 +91,12 @@ export default function Pricing() {
   const [loadingPlan, setLoadingPlan] = useState("")
   const [error, setError] = useState("")
   const plans = cycle === "yearly" ? yearlyPlans : monthlyPlans
+
+  useEffect(() => {
+    if (user) router.replace("/dashboard")
+  }, [user, router])
+
+  if (user) return null
 
   async function handleCheckout(planName: string, tier: Tier | null) {
     if (!tier || tier === "FREE") return
