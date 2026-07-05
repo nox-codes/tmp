@@ -116,10 +116,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setCookie(SESSION_COOKIE, JSON.stringify(session), 30)
         setUser(updated)
       }
-    } catch {
-      logout()
-    }
-  }, [user, logout])
+    } catch {}
+  }, [user])
 
   const refreshUserData = useCallback(async () => {
     if (!user) return
@@ -129,7 +127,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ refresh: user.refreshToken }),
       })
-      if (!res.ok) throw new Error('Refresh data failed')
+      if (!res.ok) return
       const { accessToken } = await res.json()
 
       const profileRes = await fetch(`${getApiBaseUrl()}/user/me`, {
@@ -148,10 +146,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const session: SessionData = { user: updated }
       setCookie(SESSION_COOKIE, JSON.stringify(session), 30)
       setUser(updated)
-    } catch {
-      logout()
-    }
-  }, [user, logout])
+    } catch {}
+  }, [user])
 
   const setGender = useCallback((g: 'male' | 'female') => {
     setCookie(GENDER_COOKIE, g, 365)
