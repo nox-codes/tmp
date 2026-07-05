@@ -28,20 +28,23 @@ type Course = {
   color: string
 }
 
-const COURSES: Course[] = [
-  { code: "CSC 312", name: "Algorithms & Complexity",        faculty: "Science", level: "300L", units: 3, materials: 14, pastQs: 120, rating: 4.8, progress: 78, color: "teal"   },
-  { code: "MTH 201", name: "Calculus II",                    faculty: "Science", level: "200L", units: 4, materials: 22, pastQs: 180, rating: 4.6, progress: 62, color: "amber"  },
-  { code: "STA 211", name: "Probability & Statistics",       faculty: "Science", level: "200L", units: 3, materials: 18, pastQs: 96,  rating: 4.7, progress: 91, color: "green"  },
-  { code: "PHY 102", name: "General Physics II",             faculty: "Science", level: "100L", units: 3, materials: 16, pastQs: 110, rating: 4.4, progress: 45, color: "purple" },
-  { code: "CSC 314", name: "Operating Systems",              faculty: "Science", level: "300L", units: 3, materials: 11, pastQs: 80,  rating: 4.9, progress: 0,  color: "teal"   },
-  { code: "ENG 201", name: "Use of English II",              faculty: "Arts",    level: "200L", units: 2, materials: 9,  pastQs: 60,  rating: 4.2, progress: 30, color: "amber"  },
-  { code: "MTH 202", name: "Linear Algebra",                 faculty: "Science", level: "200L", units: 3, materials: 19, pastQs: 140, rating: 4.5, progress: 0,  color: "green"  },
-  { code: "CSC 318", name: "Software Engineering",           faculty: "Science", level: "300L", units: 3, materials: 13, pastQs: 70,  rating: 4.8, progress: 0,  color: "purple" },
-  { code: "ECO 101", name: "Principles of Economics",        faculty: "Social",  level: "100L", units: 3, materials: 21, pastQs: 130, rating: 4.3, progress: 0,  color: "teal"   },
-  { code: "ACC 201", name: "Principles of Accounting",       faculty: "MSS",     level: "200L", units: 3, materials: 17, pastQs: 100, rating: 4.4, progress: 0,  color: "amber"  },
-  { code: "MED 101", name: "Anatomy & Physiology I",         faculty: "Medicine", level: "100L", units: 4, materials: 25, pastQs: 220, rating: 4.7, progress: 0,  color: "green"  },
-  { code: "LAW 101", name: "Nigerian Legal System",          faculty: "Law",     level: "100L", units: 3, materials: 14, pastQs: 90,  rating: 4.5, progress: 0,  color: "purple" },
-]
+function SkeletonCard() {
+  return (
+    <div className="lib-card animate-pulse">
+      <div className="flex items-center justify-between mb-4">
+        <div className="h-6 w-20 rounded-full bg-[var(--border)]" />
+        <div className="h-4 w-12 rounded bg-[var(--border)]" />
+      </div>
+      <div className="h-5 w-3/4 rounded bg-[var(--border)] mb-2" />
+      <div className="h-4 w-1/2 rounded bg-[var(--border)] mb-5" />
+      <div className="flex gap-4 mb-6">
+        <div className="h-4 w-24 rounded bg-[var(--border)]" />
+        <div className="h-4 w-20 rounded bg-[var(--border)]" />
+      </div>
+      <div className="h-10 w-full rounded-lg bg-[var(--border)]" />
+    </div>
+  )
+}
 
 const FACULTIES = ["All", "Science", "Arts", "Social", "MSS", "Medicine", "Law"]
 const LEVELS    = ["All", "100L", "200L", "300L", "400L", "500L"]
@@ -61,25 +64,22 @@ export default function Library() {
   const [faculty, setFaculty] = useState("All")
   const [level, setLevel] = useState("All")
   const [tab, setTab] = useState<"all" | "enrolled">("all")
-  const [backendCourses, setBackendCourses] = useState<Course[]>([])
-  const [sourceNote, setSourceNote] = useState("Showing sample courses while backend data loads.")
+  const [courses, setCourses] = useState<Course[]>([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     let active = true
 
     async function loadCourses() {
       try {
-        const courses = await fetchCourses()
+        const data = await fetchCourses()
         if (!active) return
-
-        if (Array.isArray(courses) && courses.length > 0) {
-          setBackendCourses(courses.map(mapApiCourse))
-          setSourceNote("Synced with backend course data.")
-        } else {
-          setSourceNote("No backend courses yet. Showing sample courses.")
+        if (Array.isArray(data) && data.length > 0) {
+          setCourses(data.map(mapApiCourse))
         }
       } catch {
-        if (active) setSourceNote("Backend courses unavailable. Showing sample courses.")
+      } finally {
+        if (active) setLoading(false)
       }
     }
 
@@ -88,8 +88,6 @@ export default function Library() {
       active = false
     }
   }, [])
-
-  const courses = backendCourses.length > 0 ? backendCourses : COURSES
 
   const filtered = useMemo(() => {
     return courses.filter((c) => {
@@ -112,9 +110,8 @@ export default function Library() {
         <div>
           <h1 className="dash-welcome-title display">Course Library</h1>
           <p className="dash-welcome-sub">
-            {courses.length} courses · {enrolledCount} enrolled · Aligned with UNILAG curriculum
+            {loading ? "Loading courses..." : `${courses.length} courses · ${enrolledCount} enrolled · Aligned with UNILAG curriculum`}
           </p>
-          <p className="dash-welcome-sub dash-welcome-note">{sourceNote}</p>
         </div>
         <div className="dash-welcome-actions">
           <Link href="/cbt" className="btn btn-primary btn-sm">
@@ -166,61 +163,67 @@ export default function Library() {
 
       {/* Grid */}
       <div className="lib-grid">
-        {filtered.map((c) => (
-          <div key={c.code} className="lib-card">
-            <div className="lib-card-head">
-              <span className={`lib-card-code ${TAG_BG[c.color]}`}>{c.code}</span>
-              <div className="lib-card-rating">
-                <HiOutlineStar className="text-amber-400" />
-                <span>{c.rating}</span>
-              </div>
-            </div>
-
-            <h3 className="lib-card-title">{c.name}</h3>
-            <p className="lib-card-meta">
-              {c.faculty} · {c.level} · {c.units} units
-            </p>
-
-            <div className="lib-card-stats">
-              <span><HiOutlineBookOpen /> {c.materials} materials</span>
-              <span><HiOutlineDocumentText /> {c.pastQs} past Qs</span>
-            </div>
-
-            {c.progress > 0 ? (
-              <>
-                <div className="lib-card-progress-info">
-                  <span>Progress</span>
-                  <span>{c.progress}%</span>
-                </div>
-                <div className="dash-progress">
-                  <span className={`dash-progress-fill ${PROGRESS_BG[c.color]}`} style={{ width: `${c.progress}%` }} />
-                </div>
-                <div className="lib-card-actions">
-                  <ComingSoonAction className="btn btn-secondary btn-sm flex-1">
-                    <HiOutlineClock /> Continue
-                  </ComingSoonAction>
-                  <Link href="/cbt" className="btn btn-primary btn-sm flex-1">
-                    Practice
-                  </Link>
-                </div>
-              </>
-            ) : (
-              <div className="lib-card-actions lib-card-actions-single">
-                <ComingSoonAction className="btn btn-primary btn-sm w-full" title="Course enrollment">
-                  Enroll
-                </ComingSoonAction>
-              </div>
-            )}
+        {loading ? (
+          Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)
+        ) : courses.length === 0 ? (
+          <div className="lib-empty">
+            <p>No courses available.</p>
           </div>
-        ))}
-
-        {filtered.length === 0 && (
+        ) : filtered.length === 0 ? (
           <div className="lib-empty">
             <p>No courses match those filters.</p>
             <button onClick={() => { setQ(""); setFaculty("All"); setLevel("All"); setTab("all"); }} className="btn btn-secondary btn-sm">
               Reset filters
             </button>
           </div>
+        ) : (
+          filtered.map((c) => (
+            <div key={c.code} className="lib-card">
+              <div className="lib-card-head">
+                <span className={`lib-card-code ${TAG_BG[c.color]}`}>{c.code}</span>
+                <div className="lib-card-rating">
+                  <HiOutlineStar className="text-amber-400" />
+                  <span>{c.rating}</span>
+                </div>
+              </div>
+
+              <h3 className="lib-card-title">{c.name}</h3>
+              <p className="lib-card-meta">
+                {c.faculty} · {c.level} · {c.units} units
+              </p>
+
+              <div className="lib-card-stats">
+                <span><HiOutlineBookOpen /> {c.materials} materials</span>
+                <span><HiOutlineDocumentText /> {c.pastQs} past Qs</span>
+              </div>
+
+              {c.progress > 0 ? (
+                <>
+                  <div className="lib-card-progress-info">
+                    <span>Progress</span>
+                    <span>{c.progress}%</span>
+                  </div>
+                  <div className="dash-progress">
+                    <span className={`dash-progress-fill ${PROGRESS_BG[c.color]}`} style={{ width: `${c.progress}%` }} />
+                  </div>
+                  <div className="lib-card-actions">
+                    <ComingSoonAction className="btn btn-secondary btn-sm flex-1">
+                      <HiOutlineClock /> Continue
+                    </ComingSoonAction>
+                    <Link href="/cbt" className="btn btn-primary btn-sm flex-1">
+                      Practice
+                    </Link>
+                  </div>
+                </>
+              ) : (
+                <div className="lib-card-actions lib-card-actions-single">
+                  <ComingSoonAction className="btn btn-primary btn-sm w-full" title="Course enrollment">
+                    Enroll
+                  </ComingSoonAction>
+                </div>
+              )}
+            </div>
+          ))
         )}
       </div>
     </div>
