@@ -245,10 +245,28 @@ export function updateUserProfile(data: Partial<{ username: string; faculty: str
   })
 }
 
+export function fetchUserProfile() {
+  return apiRequest<AuthUser>('/user/me', { auth: true })
+}
+
+export function updateUserTier(tier: Tier) {
+  const raw = getCookie(SESSION_COOKIE)
+  if (!raw) return
+  try {
+    const parsed = JSON.parse(raw)
+    parsed.user.tier = tier
+    const expires = new Date(Date.now() + 30 * 86400000).toUTCString()
+    document.cookie = `${SESSION_COOKIE}=${encodeURIComponent(JSON.stringify(parsed))}; expires=${expires}; path=/; SameSite=Lax`
+  } catch {}
+}
+
 export function checkout(tier: Exclude<Tier, 'FREE'>) {
   return apiRequest<{ checkoutUrl: string; reference: string }>('/order/checkout', {
     method: 'POST',
     auth: true,
     body: { tier },
+  }).then(res => {
+    sessionStorage.setItem('pending_payment', JSON.stringify({ reference: res.reference, tier }))
+    return res
   })
 }

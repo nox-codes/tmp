@@ -136,6 +136,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       })
       if (!res.ok) throw new Error('Refresh data failed')
       const { accessToken } = await res.json()
+
+      const profileRes = await fetch(`${getApiBaseUrl()}/user/me`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      })
+      if (profileRes.ok) {
+        const profileData = await profileRes.json()
+        const updated: AuthUser = { ...user, ...profileData, accessToken, refreshToken: user.refreshToken }
+        const session: SessionData = { user: updated }
+        setCookie(SESSION_COOKIE, JSON.stringify(session), 30)
+        setUser(updated)
+        return
+      }
+
       const updated: AuthUser = { ...user, accessToken }
       const session: SessionData = { user: updated }
       setCookie(SESSION_COOKIE, JSON.stringify(session), 30)

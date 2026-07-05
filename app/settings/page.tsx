@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useTheme } from "next-themes"
 import {
   HiOutlineUser,
@@ -25,6 +25,11 @@ const sections = [
 export default function Settings() {
   const [active, setActive] = useState("account")
   const { theme, setTheme } = useTheme()
+
+  useEffect(() => {
+    const tab = new URLSearchParams(window.location.search).get("tab")
+    if (tab === "billing") setActive("billing")
+  }, [])
   const { user, gender, setGender, logout } = useAuth()
   const [billingLoading, setBillingLoading] = useState(false)
   const [billingError, setBillingError] = useState("")

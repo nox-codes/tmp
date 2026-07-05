@@ -25,7 +25,7 @@ export default function Home() {
   if (user) return null
 
   return (
-    <>
+    <div className="overflow-x-hidden">
       <HeroSection />
       <FeaturesSection />
       <HowItWorksSection />
@@ -33,6 +33,6 @@ export default function Home() {
       <SocialProofSection />
       <CTASection />
       <Footer />
-    </>
+    </div>
   )
 }

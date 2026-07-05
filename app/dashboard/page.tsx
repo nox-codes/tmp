@@ -10,6 +10,8 @@ import {
   HiOutlineTrendingUp,
   HiOutlineChevronRight,
   HiOutlineCheckCircle,
+  HiOutlineCreditCard,
+  HiOutlineCog,
 } from "react-icons/hi"
 import { fetchCourses, type CourseApiItem } from "../lib/api"
 import { useRequireAuth } from "../lib/auth-context"
@@ -148,6 +150,39 @@ export default function Dashboard() {
             <span className="dash-stat-trend">{s.trend}</span>
           </div>
         ))}
+      </section>
+
+      <section className="dash-card p-8 md:p-10 mb-8 border border-[var(--accent)]/20 bg-[var(--accent-soft)]/50">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="h-12 w-12 rounded-xl bg-[var(--accent)]/15 flex items-center justify-center shrink-0">
+              <HiOutlineCreditCard className="h-6 w-6 text-[var(--accent)]" />
+            </div>
+            <div>
+              <p className="text-xs font-bold uppercase tracking-widest text-[var(--accent)]">Current Plan</p>
+              <p className="text-xl font-bold text-[var(--text)]">
+                {user?.tier === "FULL" ? "Premium" : user?.tier === "HALF" ? "Basic" : "Free"}
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-3">
+            {user?.tier === "FREE" && (
+              <Link href="/settings?tab=billing" className="btn btn-primary btn-sm px-6 py-2.5">
+                Upgrade to Basic
+              </Link>
+            )}
+            {user?.tier === "HALF" && (
+              <Link href="/settings?tab=billing" className="btn btn-primary btn-sm px-6 py-2.5">
+                Upgrade to Premium
+              </Link>
+            )}
+            {user?.tier === "FULL" && (
+              <Link href="/settings?tab=billing" className="btn btn-secondary btn-sm px-6 py-2.5 flex items-center gap-2">
+                <HiOutlineCog className="h-4 w-4" /> Manage
+              </Link>
+            )}
+          </div>
+        </div>
       </section>
 
       <div className="dash-grid">

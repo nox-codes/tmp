@@ -3398,15 +3398,17 @@ a {
   position: absolute;
   left: 60%;
   right: -40%;
+  display: none;
 }
 @media (min-width: 48rem) {
   .step-connector-line {
     left: 70%;
+    display: block;
   }
 }
 .step-connector-svg {
-  height: calc(var(--spacing) * 0);
-  width: calc(var(--spacing) * 0);
+  height: 0;
+  width: 0;
 }
 @media (min-width: 48rem) {
   .step-connector-svg {
