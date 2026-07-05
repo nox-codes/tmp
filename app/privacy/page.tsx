@@ -75,7 +75,7 @@ export default function Privacy() {
             <h2 className="section-heading" style={{ marginTop: '3rem' }}>Contact</h2>
             <p className="about-mission-text" style={{ marginTop: '1rem' }}>
               Questions about this policy? Reach us at{" "}
-              <Link href="mailto:privacy@unilock.app" className="auth-link">support@unilock.online</Link>.
+              <Link href="mailto:support@unilock.online" className="auth-link">support@unilock.online</Link>.
             </p>
           </ScrollReveal>
         </div>

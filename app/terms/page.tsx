@@ -47,7 +47,7 @@ export default function Terms() {
           <ScrollReveal>
             <h2 className="section-heading" style={{ marginTop: '3rem' }}>Subscriptions &amp; Billing</h2>
             <p className="about-mission-text" style={{ marginTop: '1rem' }}>
-              Paid plans (Essentials, Pro) are billed monthly, per-semester, or yearly as selected at checkout.
+              Paid plans (Basic, Premium) are billed monthly, per-semester, or yearly as selected at checkout.
               Payments are processed by Paystack. You can cancel anytime — access continues until the end of your
               current billing period. Refunds are handled on a case-by-case basis.
             </p>
@@ -92,7 +92,7 @@ export default function Terms() {
             <h2 className="section-heading" style={{ marginTop: '3rem' }}>Contact</h2>
             <p className="about-mission-text" style={{ marginTop: '1rem' }}>
               Questions? Write to{" "}
-              <Link href="mailto:legal@unilock.app" className="auth-link">support@unilock.online</Link>.
+              <Link href="mailto:support@unilock.online" className="auth-link">support@unilock.online</Link>.
             </p>
           </ScrollReveal>
         </div>

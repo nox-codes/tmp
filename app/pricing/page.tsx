@@ -23,7 +23,7 @@ const monthlyPlans = [
     popular: false,
   },
   {
-    name: "Essentials",
+    name: "Basic",
     price: "₦2,500",
     period: "/month",
     description: "For the serious student who wants every tool.",
@@ -34,11 +34,11 @@ const monthlyPlans = [
     popular: true,
   },
   {
-    name: "Pro",
+    name: "Premium",
     price: "₦7,000",
     period: "/semester",
     description: "Save ~20% vs paying monthly.",
-    features: ["Everything in Essentials", "1-on-1 study coaching", "Custom study plans", "Offline downloads", "Early feature access"],
+    features: ["Everything in Basic", "1-on-1 study coaching", "Custom study plans", "Offline downloads", "Early feature access"],
     cta: "Get Pro",
     href: "/register",
     tier: "FULL" as Tier,
@@ -58,8 +58,8 @@ const monthlyPlans = [
 ]
 
 const yearlyPlans = monthlyPlans.map(p => {
-  if (p.name === "Essentials") return { ...p, price: "₦24,000", period: "/year", description: "20% off vs monthly. Best value." }
-  if (p.name === "Pro") return { ...p, price: "₦12,000", period: "/year", description: "Lock in a full session of savings." }
+  if (p.name === "Basic") return { ...p, price: "₦24,000", period: "/year", description: "20% off vs monthly. Best value." }
+  if (p.name === "Premium") return { ...p, price: "₦12,000", period: "/year", description: "Lock in a full session of savings." }
   return p
 })
 
@@ -76,7 +76,7 @@ const comparisonRows: { feature: string; values: (string | boolean)[] }[] = [
 ]
 
 const faqs = [
-  { q: "Is there a free trial on paid plans?", a: "Yes — Essentials and Pro both come with a 7-day free trial. We don't charge until day 8 and you can cancel anytime." },
+  { q: "Is there a free trial on paid plans?", a: "Yes — Basic and Pro both come with a 7-day free trial. We don't charge until day 8 and you can cancel anytime." },
   { q: "What payment methods do you accept?",  a: "All major Nigerian debit cards, bank transfer, and USSD — all secured via Paystack." },
   { q: "Can I switch plans later?",            a: "Yes, upgrade or downgrade anytime from Settings → Billing. We prorate fairly." },
   { q: "Do you offer student discounts?",      a: "Every plan IS the student discount. We don't have separate pricing for non-students because we don't sell to non-students." },
@@ -211,7 +211,7 @@ export default function Pricing() {
                   <tr>
                     <th></th>
                     <th>Free</th>
-                    <th>Essentials</th>
+                    <th>Basic</th>
                     <th>Pro</th>
                     <th>Department</th>
                   </tr>

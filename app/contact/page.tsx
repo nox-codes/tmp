@@ -93,11 +93,11 @@ export default function Contact() {
             <div className="contact-side">
               <ScrollReveal>
                 <div className="contact-channels">
-                  <a href="mailto:hello@unilock.app" className="contact-channel">
+                  <a href="mailto:support@unilock.online" className="contact-channel">
                     <div className="contact-channel-icon"><HiOutlineMail /></div>
                     <div>
                       <p className="contact-channel-label">Email</p>
-                      <p className="contact-channel-value">hello@unilock.app</p>
+                      <p className="contact-channel-value">support@unilock.online</p>
                     </div>
                   </a>
                   <ComingSoonAction className="contact-channel" title="Live chat">

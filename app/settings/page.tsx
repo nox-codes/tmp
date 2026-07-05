@@ -45,7 +45,7 @@ export default function Settings() {
   }
 
   const currentTier = user?.tier ?? 'FREE'
-  const tierLabel = currentTier === 'FULL' ? 'Pro' : currentTier === 'HALF' ? 'Essentials' : 'Free'
+  const tierLabel = currentTier === 'FULL' ? 'Premium' : currentTier === 'HALF' ? 'Basic' : 'Free'
 
   return (
     <div className="dash">
@@ -172,7 +172,7 @@ export default function Settings() {
                         disabled={billingLoading}
                         className="btn btn-primary px-10 py-4 text-base"
                       >
-                        {billingLoading ? 'Processing...' : 'Upgrade to Essentials - ₦2,500/mo'}
+                        {billingLoading ? 'Processing...' : 'Upgrade to Basic - ₦2,500/mo'}
                       </button>
                     )}
                     {currentTier !== 'FULL' && (

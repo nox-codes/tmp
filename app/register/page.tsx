@@ -118,12 +118,12 @@ export default function Register() {
 
       {/* Form panel */}
       <main className="auth-form-panel">
-        <div className="auth-form-mobile-logo">
+        {/* <div className="auth-form-mobile-logo">
           <Link href="/" className="footer-brand">
             <Image width={32} height={32} src="/logo.svg" alt="UniLock" />
             <span className="footer-brand-text">UniLock</span>
           </Link>
-        </div>
+        </div> */}
 
         <form className="auth-form" onSubmit={handleSubmit}>
           <div className="auth-step-indicator">

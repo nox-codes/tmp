@@ -13,7 +13,7 @@ const plans = [
     popular: false,
   },
   {
-    name: "Essentials",
+    name: "Basic",
     price: "₦2,500",
     period: "/month",
     description: "Most popular for serious students",
@@ -23,11 +23,11 @@ const plans = [
     popular: true,
   },
   {
-    name: "Pro",
+    name: "Premium",
     price: "₦7,000",
     period: "/semester",
     description: "Save 20% for longer commitment",
-    features: ["Everything in Essentials", "1-on-1 study coaching", "Custom study plans", "Offline access", "Early feature access"],
+    features: ["Everything in Basic", "1-on-1 study coaching", "Custom study plans", "Offline access", "Early feature access"],
     cta: "Get Pro",
     href: "/register",
     popular: false,

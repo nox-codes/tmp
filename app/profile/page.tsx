@@ -24,7 +24,7 @@ export default function Profile() {
   const faculty = user?.faculty ?? "—"
   const level = user?.level ? `${user.level}L` : "—"
   const tier = user?.tier ?? "FREE"
-  const tierBadge = tier === 'FULL' ? 'Pro' : tier === 'HALF' ? 'Essentials' : 'Free'
+  const tierBadge = tier === 'FULL' ? 'Premium' : tier === 'HALF' ? 'Basic' : 'Free'
 
   return (
     <div className="dash">
