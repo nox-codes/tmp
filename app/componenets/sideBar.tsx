@@ -2,7 +2,7 @@
 
 import { useMemo } from "react"
 import Link from "next/link"
-import { usePathname, useRouter } from "next/navigation"
+import { usePathname } from "next/navigation"
 import {
   HiOutlineHome,
   HiOutlineBookOpen,
@@ -64,7 +64,6 @@ function computeStreak(): number {
 
 export default function SideBar() {
   const pathname = usePathname()
-  const router = useRouter()
   const { logout } = useAuth()
   const streak = useMemo(() => computeStreak(), [])
   const isActive = (href: string) =>
@@ -101,7 +100,7 @@ export default function SideBar() {
           </Link>
         ))}
         <button
-          onClick={() => { logout(); router.push("/") }}
+          onClick={() => logout()}
           className="sidebar-link sidebar-link-danger"
           data-tooltip="Log Out"
           aria-label="Log Out"

@@ -7,14 +7,33 @@ import { getApiBaseUrl, checkout } from './api'
 
 const SESSION_COOKIE = 'unilock_session'
 const GENDER_COOKIE = 'unilock_gender'
+const TIER_CLAIMS = ["tier", "role", "subscriptionTier", "userTier", "plan", "type"] as const
+
+function decodeAccessToken(token: string): Record<string, unknown> | null {
+  try {
+    const payload = token.split(".")[1]
+    const base64 = payload.replace(/-/g, "+").replace(/_/g, "/")
+    const padded = base64.padEnd(base64.length + (4 - (base64.length % 4)) % 4, "=")
+    return JSON.parse(atob(padded))
+  } catch { return null }
+}
+
+function extractTier(claims: Record<string, unknown>): Tier | null {
+  for (const key of TIER_CLAIMS) {
+    const val = claims[key]
+    if (typeof val === "string" && (val === "FREE" || val === "HALF" || val === "FULL")) return val as Tier
+  }
+  return null
+}
 
 function setCookie(name: string, value: string, days: number) {
   if (typeof document === 'undefined') return
+  const secure = typeof location !== 'undefined' && location.protocol === 'https:' ? '; Secure' : ''
   if (days > 0) {
     const expires = new Date(Date.now() + days * 86400000).toUTCString()
-    document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/; SameSite=Lax`
+    document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/; SameSite=Lax${secure}`
   } else {
-    document.cookie = `${name}=${encodeURIComponent(value)}; path=/; SameSite=Lax`
+    document.cookie = `${name}=${encodeURIComponent(value)}; path=/; SameSite=Lax${secure}`
   }
 }
 
@@ -25,7 +44,8 @@ function getCookie(name: string): string | null {
 }
 
 function eraseCookie(name: string) {
-  document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax`
+  const secure = typeof location !== 'undefined' && location.protocol === 'https:' ? '; Secure' : ''
+  document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax${secure}`
 }
 
 type SessionData = {
@@ -58,6 +78,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
           const parsed: SessionData = JSON.parse(raw)
           if (parsed?.user?.accessToken) {
+            if (!parsed.user.tier) {
+              const claims = decodeAccessToken(parsed.user.accessToken)
+              const tier = claims ? extractTier(claims) : null
+              if (tier) {
+                parsed.user.tier = tier
+                setCookie(SESSION_COOKIE, JSON.stringify(parsed), 30)
+              }
+            }
             if (active) setUser(parsed.user)
             const savedGender = getCookie(GENDER_COOKIE)
             if (savedGender === 'female' || savedGender === 'male') {
@@ -91,14 +119,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [user, loading])
 
   const login = useCallback((userData: AuthUser, rememberMe = true) => {
-    const session: SessionData = { user: userData }
+    const tier = userData.accessToken
+      ? extractTier(decodeAccessToken(userData.accessToken) ?? {}) ?? userData.tier
+      : userData.tier
+    const userWithTier: AuthUser = { ...userData, tier: tier ?? 'FREE' }
+    const session: SessionData = { user: userWithTier }
     setCookie(SESSION_COOKIE, JSON.stringify(session), rememberMe ? 30 : 0)
-    setUser(userData)
+    setUser(userWithTier)
   }, [])
 
   const logout = useCallback(() => {
     eraseCookie(SESSION_COOKIE)
+    eraseCookie(GENDER_COOKIE)
     setUser(null)
+    window.location.href = '/'
   }, [])
 
   const refreshUser = useCallback(async () => {
