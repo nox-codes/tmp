@@ -1,7 +1,7 @@
 'use client'
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import {
   HiOutlineHome,
   HiOutlineBookOpen,
@@ -13,6 +13,7 @@ import {
   HiOutlineCog,
   HiOutlineLogout,
 } from "react-icons/hi"
+import { useAuth } from "../lib/auth-context"
 
 const primary = [
   { href: "/dashboard",  label: "Dashboard",    Icon: HiOutlineHome },
@@ -30,6 +31,8 @@ const secondary = [
 
 export default function SideBar() {
   const pathname = usePathname()
+  const router = useRouter()
+  const { logout } = useAuth()
   const isActive = (href: string) =>
     href === "/dashboard" ? pathname === href : pathname.startsWith(href)
 
@@ -63,10 +66,15 @@ export default function SideBar() {
             <span className="sr-only">{label}</span>
           </Link>
         ))}
-        <Link href="/" className="sidebar-link sidebar-link-danger" data-tooltip="Log Out">
+        <button
+          onClick={() => { logout(); router.push("/") }}
+          className="sidebar-link sidebar-link-danger"
+          data-tooltip="Log Out"
+          aria-label="Log Out"
+        >
           <HiOutlineLogout className="sidebar-icon" aria-hidden />
           <span className="sr-only">Log Out</span>
-        </Link>
+        </button>
       </nav>
 
       <div className="sidebar-streak" data-tooltip="12-day streak">

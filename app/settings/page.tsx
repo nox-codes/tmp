@@ -10,6 +10,8 @@ import {
   HiOutlineGlobe,
   HiOutlineLogout,
 } from "react-icons/hi"
+import { useAuth } from "../lib/auth-context"
+import { checkout } from "../lib/api"
 import ComingSoonAction from "../componenets/ComingSoonAction"
 
 const sections = [
@@ -23,6 +25,27 @@ const sections = [
 export default function Settings() {
   const [active, setActive] = useState("account")
   const { theme, setTheme } = useTheme()
+  const { user, gender, setGender, logout } = useAuth()
+  const [billingLoading, setBillingLoading] = useState(false)
+  const [billingError, setBillingError] = useState("")
+
+  const hasPassword = user?.id != null
+
+  async function handleCheckout(tier: 'HALF' | 'FULL') {
+    setBillingLoading(true)
+    setBillingError("")
+    try {
+      const { checkoutUrl } = await checkout(tier)
+      window.location.href = checkoutUrl
+    } catch (err) {
+      setBillingError(err instanceof Error ? err.message : "Checkout failed")
+    } finally {
+      setBillingLoading(false)
+    }
+  }
+
+  const currentTier = user?.tier ?? 'FREE'
+  const tierLabel = currentTier === 'FULL' ? 'Pro' : currentTier === 'HALF' ? 'Essentials' : 'Free'
 
   return (
     <div className="dash">
@@ -50,9 +73,12 @@ export default function Settings() {
               </button>
             ))}
             <div className="my-4 h-px bg-[var(--line)] mx-2" />
-            <ComingSoonAction className="w-full flex items-center gap-4 rounded-xl px-5 py-4 text-sm font-medium text-rose-500 hover:bg-rose-500/10 transition-colors cursor-pointer" title="Log out">
+            <button
+              onClick={() => { logout() }}
+              className="w-full flex items-center gap-4 rounded-xl px-5 py-4 text-sm font-medium text-rose-500 hover:bg-rose-500/10 transition-colors cursor-pointer"
+            >
               <HiOutlineLogout className="h-5 w-5 shrink-0" /> Log out
-            </ComingSoonAction>
+            </button>
           </nav>
         </aside>
 
@@ -66,25 +92,36 @@ export default function Settings() {
                 </div>
                 <div className="grid gap-10 sm:grid-cols-2">
                   <div className="auth-field">
-                    <label className="text-xs font-bold uppercase tracking-wider text-[var(--text-faint)] mb-2 block">First name</label>
-                    <input type="text" defaultValue="Nox" className="h-12" />
-                  </div>
-                  <div className="auth-field">
-                    <label className="text-xs font-bold uppercase tracking-wider text-[var(--text-faint)] mb-2 block">Last name</label>
-                    <input type="text" defaultValue="Adekunle" className="h-12" />
+                    <label className="text-xs font-bold uppercase tracking-wider text-[var(--text-faint)] mb-2 block">Display name</label>
+                    <input type="text" defaultValue={user?.username ?? ''} className="h-12" readOnly />
                   </div>
                   <div className="auth-field">
                     <label className="text-xs font-bold uppercase tracking-wider text-[var(--text-faint)] mb-2 block">Email</label>
-                    <input type="email" defaultValue="nox@unilag.edu.ng" className="h-12" />
+                    <input type="email" defaultValue={user?.email ?? ''} className="h-12" readOnly />
                   </div>
                   <div className="auth-field">
-                    <label className="text-xs font-bold uppercase tracking-wider text-[var(--text-faint)] mb-2 block">Matric number</label>
-                    <input type="text" defaultValue="219024050" className="h-12" />
+                    <label className="text-xs font-bold uppercase tracking-wider text-[var(--text-faint)] mb-2 block">Gender</label>
+                    <select
+                      value={gender}
+                      onChange={(e) => setGender(e.target.value as 'male' | 'female')}
+                      className="h-12"
+                    >
+                      <option value="male">Male</option>
+                      <option value="female">Female</option>
+                    </select>
+                  </div>
+                  <div className="auth-field">
+                    <label className="text-xs font-bold uppercase tracking-wider text-[var(--text-faint)] mb-2 block">Tier</label>
+                    <input type="text" value={tierLabel} className="h-12" readOnly />
                   </div>
                 </div>
                 <div className="flex gap-4 pt-6">
-                  <ComingSoonAction className="btn btn-primary px-10 py-4 text-base" title="Account settings">Save changes</ComingSoonAction>
-                  <ComingSoonAction className="btn btn-secondary px-10 py-4 text-base" title="Account settings">Cancel</ComingSoonAction>
+                  <ComingSoonAction className="btn btn-primary px-10 py-4 text-base" title="Save profile">
+                    Save changes
+                  </ComingSoonAction>
+                  <ComingSoonAction className="btn btn-secondary px-10 py-4 text-base" title="Cancel">
+                    Cancel
+                  </ComingSoonAction>
                 </div>
               </div>
             )}
@@ -126,22 +163,34 @@ export default function Settings() {
                 <div className="rounded-2xl border border-[var(--accent)]/30 bg-[var(--accent-soft)] p-10 space-y-8">
                   <div className="space-y-3">
                     <p className="text-xs font-bold uppercase tracking-widest text-[var(--accent)]">Current plan</p>
-                    <p className="text-3xl font-bold text-[var(--text)]">Essentials · ₦2,500/mo</p>
-                    <p className="text-base text-[var(--text-mute)]">Renews on March 14</p>
+                    <p className="text-3xl font-bold text-[var(--text)]">{tierLabel}</p>
                   </div>
-                  <div className="flex gap-4">
-                    <ComingSoonAction className="btn btn-primary px-10 py-4 text-base" title="Billing settings">Upgrade to Pro</ComingSoonAction>
-                    <ComingSoonAction className="btn btn-secondary px-10 py-4 text-base" title="Billing settings">Cancel</ComingSoonAction>
+                  <div className="flex gap-4 flex-wrap">
+                    {currentTier !== 'HALF' && currentTier !== 'FULL' && (
+                      <button
+                        onClick={() => handleCheckout('HALF')}
+                        disabled={billingLoading}
+                        className="btn btn-primary px-10 py-4 text-base"
+                      >
+                        {billingLoading ? 'Processing...' : 'Upgrade to Essentials - ₦2,500/mo'}
+                      </button>
+                    )}
+                    {currentTier !== 'FULL' && (
+                      <button
+                        onClick={() => handleCheckout('FULL')}
+                        disabled={billingLoading}
+                        className="btn btn-secondary px-10 py-4 text-base"
+                      >
+                        {billingLoading ? 'Processing...' : 'Upgrade to Pro - ₦7,000/sem'}
+                      </button>
+                    )}
+                    {currentTier === 'FULL' && (
+                      <p className="text-base text-[var(--text-mute)]">You are on the highest tier.</p>
+                    )}
                   </div>
-                </div>
-                <div className="space-y-8">
-                  <p className="text-xs font-bold uppercase tracking-widest text-[var(--text-faint)]">Payment method</p>
-                  <div className="flex items-center justify-between py-8 border-b border-[var(--line)]">
-                    <span className="text-lg text-[var(--text)]">Visa ending in •••• 4242</span>
-                    <ComingSoonAction className="text-sm font-semibold text-[var(--accent)] hover:brightness-110 transition-colors cursor-pointer" title="Payment method">
-                      Update
-                    </ComingSoonAction>
-                  </div>
+                  {billingError && (
+                    <p className="text-sm text-rose-400">{billingError}</p>
+                  )}
                 </div>
               </div>
             )}
@@ -152,19 +201,25 @@ export default function Settings() {
                   <h2 className="text-2xl font-semibold text-[var(--text)]">Security</h2>
                   <p className="text-base text-[var(--text-mute)]">Password and devices</p>
                 </div>
-                <div className="space-y-10">
-                  <div className="auth-field">
-                    <label className="text-xs font-bold uppercase tracking-wider text-[var(--text-faint)] mb-2 block">Current password</label>
-                    <input type="password" placeholder="Enter current password" className="h-12" />
+                {hasPassword ? (
+                  <div className="space-y-10">
+                    <div className="auth-field">
+                      <label className="text-xs font-bold uppercase tracking-wider text-[var(--text-faint)] mb-2 block">Current password</label>
+                      <input type="password" placeholder="Enter current password" className="h-12" readOnly />
+                    </div>
+                    <div className="auth-field">
+                      <label className="text-xs font-bold uppercase tracking-wider text-[var(--text-faint)] mb-2 block">New password</label>
+                      <input type="password" placeholder="Enter new password" className="h-12" readOnly />
+                    </div>
+                    <ComingSoonAction className="btn btn-primary px-10 py-4 text-base" title="Password update">
+                      Update password
+                    </ComingSoonAction>
                   </div>
-                  <div className="auth-field">
-                    <label className="text-xs font-bold uppercase tracking-wider text-[var(--text-faint)] mb-2 block">New password</label>
-                    <input type="password" placeholder="Enter new password" className="h-12" />
-                  </div>
-                  <ComingSoonAction className="btn btn-primary px-10 py-4 text-base" title="Password update">
-                    Update password
-                  </ComingSoonAction>
-                </div>
+                ) : (
+                  <p className="text-base text-[var(--text-mute)]">
+                    You signed in with Google. Password management is handled by Google.
+                  </p>
+                )}
                 <div className="pt-12 border-t border-[var(--line)] space-y-10">
                   <div className="space-y-3">
                     <p className="text-lg font-medium text-[var(--text)]">Two-factor authentication</p>
@@ -192,6 +247,14 @@ export default function Settings() {
                       <option value="light">Light</option>
                     </select>
                     <p className="text-sm text-[var(--text-faint)] mt-3">Default: matches your system settings</p>
+                  </div>
+                  <div className="auth-field">
+                    <label className="text-xs font-bold uppercase tracking-wider text-[var(--text-faint)] mb-2 block">Gender</label>
+                    <select value={gender} onChange={(e) => setGender(e.target.value as 'male' | 'female')} className="h-12">
+                      <option value="male">Male</option>
+                      <option value="female">Female</option>
+                    </select>
+                    <p className="text-sm text-[var(--text-faint)] mt-3">Used for your profile avatar.</p>
                   </div>
                   <div className="auth-field">
                     <label className="text-xs font-bold uppercase tracking-wider text-[var(--text-faint)] mb-2 block">Timezone</label>

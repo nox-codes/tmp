@@ -1,48 +1,46 @@
+'use client'
+
 import Image from "next/image"
 import {
   HiOutlineMail,
   HiOutlineAcademicCap,
   HiOutlineIdentification,
-  HiOutlineLocationMarker,
   HiOutlineCalendar,
   HiOutlinePencil,
   HiOutlineFire,
   HiOutlineLightningBolt,
   HiOutlineStar,
 } from "react-icons/hi"
+import { useAuth } from "../lib/auth-context"
 import ComingSoonAction from "../componenets/ComingSoonAction"
 
-const achievements = [
-  { name: "First CBT",          date: "Sep 2024", icon: "🎓", desc: "Took your first practice exam" },
-  { name: "7-day streak",       date: "Oct 2024", icon: "🔥", desc: "Studied 7 days in a row" },
-  { name: "Top 10%",            date: "Nov 2024", icon: "🏆", desc: "Reached top 10% in your dept" },
-  { name: "100 CBTs",           date: "Dec 2024", icon: "💯", desc: "Completed 100 practice attempts" },
-  { name: "GPA jump",           date: "Jan 2025", icon: "📈", desc: "+0.5 GPA improvement" },
-  { name: "Helped 10 friends",  date: "Feb 2025", icon: "🤝", desc: "Invited 10 classmates to UniLock" },
-]
-
-const courses = [
-  { code: "CSC 312", name: "Algorithms & Complexity", progress: 78 },
-  { code: "MTH 201", name: "Calculus II",             progress: 62 },
-  { code: "STA 211", name: "Probability & Stats",     progress: 91 },
-  { code: "PHY 102", name: "General Physics II",      progress: 45 },
-]
-
 export default function Profile() {
+  const { user, gender } = useAuth()
+  const avatarSrc = gender === 'female' ? '/female-avatar.svg' : '/male-avatar.svg'
+
+  const displayName = user?.username ?? "Student"
+  const email = user?.email ?? "student@unilag.edu.ng"
+  const department = user?.department ?? "—"
+  const faculty = user?.faculty ?? "—"
+  const level = user?.level ? `${user.level}L` : "—"
+  const tier = user?.tier ?? "FREE"
+  const tierBadge = tier === 'FULL' ? 'Pro' : tier === 'HALF' ? 'Essentials' : 'Free'
+
   return (
     <div className="dash">
-      {/* Cover + identity */}
       <section className="profile-cover">
         <div className="profile-cover-bg" />
         <div className="profile-identity">
           <div className="profile-avatar">
-            <Image src="/male-avatar.svg" alt="Profile" width={120} height={120} />
+            <Image src={avatarSrc} alt="Profile" width={120} height={120} />
           </div>
           <div className="profile-identity-info">
-            <h1 className="profile-name display">Nox Adekunle</h1>
-            <p className="profile-handle">@nox · she/her</p>
+            <h1 className="profile-name display">{displayName}</h1>
+            <p className="profile-handle">@{displayName.toLowerCase().replace(/\s+/g, '')}</p>
             <div className="profile-badges">
-              <span className="profile-badge profile-badge-pro"><HiOutlineStar /> Pro</span>
+              <span className={`profile-badge ${tier !== 'FREE' ? 'profile-badge-pro' : ''}`}>
+                <HiOutlineStar /> {tierBadge}
+              </span>
               <span className="profile-badge"><HiOutlineFire /> 12-day streak</span>
               <span className="profile-badge"><HiOutlineLightningBolt /> Top 12%</span>
             </div>
@@ -53,9 +51,7 @@ export default function Profile() {
         </div>
       </section>
 
-      {/* Two-column main — uses dash-grid with hairline border */}
       <div className="dash-grid">
-        {/* Left */}
         <div className="dash-card">
           <div className="dash-card-head">
             <div>
@@ -64,15 +60,13 @@ export default function Profile() {
             </div>
           </div>
           <ul className="profile-info">
-            <li><HiOutlineMail /> <span>nox@unilag.edu.ng</span></li>
-            <li><HiOutlineIdentification /> <span>219024050</span></li>
-            <li><HiOutlineAcademicCap /> <span>Computer Science · 300L · Faculty of Science</span></li>
-            <li><HiOutlineLocationMarker /> <span>Akoka, Lagos</span></li>
-            <li><HiOutlineCalendar /> <span>Joined September 2024</span></li>
+            <li><HiOutlineMail /> <span>{email}</span></li>
+            <li><HiOutlineIdentification /> <span>{department}</span></li>
+            <li><HiOutlineAcademicCap /> <span>{department} · {level} · {faculty}</span></li>
+            <li><HiOutlineCalendar /> <span>Joined 2024</span></li>
           </ul>
         </div>
 
-        {/* Right top — stats */}
         <div className="dash-card">
           <div className="dash-card-head">
             <div>
@@ -100,49 +94,24 @@ export default function Profile() {
           </div>
         </div>
 
-        {/* Left bottom — courses */}
         <div className="dash-card">
           <div className="dash-card-head">
             <div>
               <h2 className="dash-card-title">Currently enrolled</h2>
-              <p className="dash-card-sub">4 courses this semester</p>
+              <p className="dash-card-sub">Courses this semester</p>
             </div>
           </div>
-          <ul className="profile-courses">
-            {courses.map((c) => (
-              <li key={c.code} className="profile-course">
-                <div>
-                  <p className="profile-course-code">{c.code}</p>
-                  <p className="profile-course-name">{c.name}</p>
-                </div>
-                <div className="profile-course-progress">
-                  <div className="dash-progress">
-                    <span className="dash-progress-fill bg-teal-400" style={{ width: `${c.progress}%` }} />
-                  </div>
-                  <span>{c.progress}%</span>
-                </div>
-              </li>
-            ))}
-          </ul>
+          <p className="text-[var(--text-mute)] text-sm p-6">No enrollment data available yet.</p>
         </div>
 
-        {/* Right bottom — achievements */}
         <div className="dash-card">
           <div className="dash-card-head">
             <div>
               <h2 className="dash-card-title">Achievements</h2>
-              <p className="dash-card-sub">6 of 24 unlocked</p>
+              <p className="dash-card-sub">0 of 24 unlocked</p>
             </div>
           </div>
-          <div className="profile-achievements">
-            {achievements.map((a) => (
-              <div key={a.name} className="profile-achievement">
-                <div className="profile-achievement-icon">{a.icon}</div>
-                <p className="profile-achievement-name">{a.name}</p>
-                <p className="profile-achievement-date">{a.date}</p>
-              </div>
-            ))}
-          </div>
+          <p className="text-[var(--text-mute)] text-sm p-6">Complete your first CBT to earn achievements.</p>
         </div>
       </div>
     </div>

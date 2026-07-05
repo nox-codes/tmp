@@ -1,7 +1,9 @@
 'use client'
 
 import Link from "next/link"
-import { useState } from "react"
+import { useEffect, useMemo, useState } from "react"
+import { useRouter } from "next/navigation"
+import { useRef } from "react"
 import {
   HiOutlineCheckCircle,
   HiOutlineXCircle,
@@ -13,51 +15,101 @@ import {
 } from "react-icons/hi"
 import ComingSoonAction from "../../componenets/ComingSoonAction"
 
-const result = {
-  course: "CSC 312 — Algorithms & Complexity",
-  date: "Today · just now",
-  score: 82,
-  correct: 33,
-  wrong: 5,
-  skipped: 2,
-  total: 40,
-  duration: "52 min",
-  best: 88,
-  rank: 14,
-  classAvg: 71,
+type ExamResult = {
+  courseCode: string
+  courseName: string
+  score: number
+  correct: number
+  wrong: number
+  skipped: number
+  total: number
+  duration: string
+  answers: Record<number, number>
+  questions: { id: number; text: string; options: string[]; correctAnswer: number }[]
+  flagged: number[]
 }
 
-const topicBreakdown = [
-  { topic: "Sorting & Searching",     correct: 9, total: 10 },
-  { topic: "Graphs",                  correct: 7, total: 10 },
-  { topic: "Dynamic Programming",     correct: 6, total: 8 },
-  { topic: "Trees",                   correct: 8, total: 8 },
-  { topic: "Complexity Analysis",     correct: 3, total: 4 },
-]
-
-const review = [
-  { n: 1,  status: "correct",  text: "Time complexity of binary search?", your: "O(log n)",     answer: "O(log n)" },
-  { n: 2,  status: "correct",  text: "LIFO data structure?",              your: "Stack",         answer: "Stack" },
-  { n: 3,  status: "wrong",    text: "Topological ordering algorithm?",   your: "Dijkstra",      answer: "Kahn's algorithm" },
-  { n: 4,  status: "correct",  text: "Average-case quicksort?",           your: "O(n log n)",    answer: "O(n log n)" },
-  { n: 5,  status: "wrong",    text: "Not a stable sorting algorithm?",   your: "Insertion sort", answer: "Quicksort" },
-  { n: 6,  status: "correct",  text: "Fastest growth rate?",              your: "O(n!)",         answer: "O(n!)" },
-  { n: 7,  status: "skipped",  text: "Dynamic programming uses?",         your: "—",             answer: "Memoization & optimal substructure" },
-  { n: 8,  status: "correct",  text: "Insert into balanced BST?",         your: "O(log n)",      answer: "O(log n)" },
-]
+const defaultResult: ExamResult = {
+  courseCode: 'CSC 312',
+  courseName: 'Algorithms & Complexity',
+  score: 0,
+  correct: 0,
+  wrong: 0,
+  skipped: 0,
+  total: 0,
+  duration: '0 min',
+  answers: {},
+  questions: [],
+  flagged: [],
+}
 
 export default function ResultsPage() {
+  const router = useRouter()
+  const [result, setResult] = useState<ExamResult>(defaultResult)
   const [filter, setFilter] = useState<"all" | "wrong" | "skipped" | "flagged">("all")
+  const initialized = useRef(false)
+
+  useEffect(() => {
+    if (initialized.current) return
+    initialized.current = true
+    const raw = sessionStorage.getItem('cbt_result')
+    if (!raw) {
+      router.replace('/cbt')
+      return
+    }
+    try {
+      const parsed = JSON.parse(raw) as ExamResult
+      if (parsed.total > 0) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setResult(parsed)
+      } else {
+        router.replace('/cbt')
+      }
+    } catch {
+      router.replace('/cbt')
+    }
+  }, [router])
+
+  const topicBreakdown = useMemo(() => {
+    const topics: Record<string, { correct: number; total: number }> = {}
+    result.questions.forEach((q) => {
+      const topic = 'General'
+      if (!topics[topic]) topics[topic] = { correct: 0, total: 0 }
+      topics[topic].total++
+      if (result.answers[q.id] !== undefined && result.answers[q.id] === q.correctAnswer) {
+        topics[topic].correct++
+      }
+    })
+    return Object.entries(topics).map(([topic, data]) => ({ topic, ...data }))
+  }, [result])
+
+  const review = useMemo(() => {
+    return result.questions.map((q, i) => {
+      const userAnswer = result.answers[q.id]
+      const isCorrect = userAnswer !== undefined && userAnswer === q.correctAnswer
+      const isSkipped = userAnswer === undefined
+      const status = isSkipped ? 'skipped' : isCorrect ? 'correct' : 'wrong'
+      return {
+        n: i + 1,
+        status,
+        text: q.text,
+        your: isSkipped ? '—' : q.options[userAnswer] ?? '—',
+        answer: q.options[q.correctAnswer],
+      }
+    })
+  }, [result])
+
   const visible = review.filter(r => filter === "all" ? true : r.status === filter)
+
+  if (result.total === 0) return null
 
   return (
     <div className="dash">
-      {/* Hero */}
       <section className="results-hero">
         <div className="results-hero-left">
           <p className="results-hero-label">Exam complete</p>
-          <h1 className="results-hero-title">{result.course}</h1>
-          <p className="results-hero-meta">{result.date} · {result.duration}</p>
+          <h1 className="results-hero-title">{result.courseCode} — {result.courseName}</h1>
+          <p className="results-hero-meta">· {result.duration}</p>
 
           <div className="results-actions">
             <Link href="/cbt" className="btn btn-secondary"><HiOutlineRefresh /> Retry</Link>
@@ -86,7 +138,6 @@ export default function ResultsPage() {
         </div>
       </section>
 
-      {/* Stat cards */}
       <section className="dash-stats">
         <div className="dash-stat">
           <div className="dash-stat-icon bg-emerald-500/10 text-emerald-400">
@@ -96,7 +147,7 @@ export default function ResultsPage() {
             <p className="dash-stat-label">Correct</p>
             <p className="dash-stat-value">{result.correct}/{result.total}</p>
           </div>
-          <span className="dash-stat-trend">{Math.round((result.correct / result.total) * 100)}%</span>
+          <span className="dash-stat-trend">{result.total > 0 ? Math.round((result.correct / result.total) * 100) : 0}%</span>
         </div>
         <div className="dash-stat">
           <div className="dash-stat-icon bg-rose-500/10 text-rose-400">
@@ -113,36 +164,34 @@ export default function ResultsPage() {
             <HiOutlineClock className="h-5 w-5" />
           </div>
           <div className="dash-stat-info">
-            <p className="dash-stat-label">Avg / Q</p>
-            <p className="dash-stat-value">78s</p>
+            <p className="dash-stat-label">Skipped</p>
+            <p className="dash-stat-value">{result.skipped}</p>
           </div>
-          <span className="dash-stat-trend">−12s</span>
+          <span className="dash-stat-trend">—</span>
         </div>
         <div className="dash-stat">
           <div className="dash-stat-icon bg-violet-500/10 text-violet-400">
             <HiOutlineLightningBolt className="h-5 w-5" />
           </div>
           <div className="dash-stat-info">
-            <p className="dash-stat-label">Class rank</p>
-            <p className="dash-stat-value">#{result.rank}</p>
+            <p className="dash-stat-label">Duration</p>
+            <p className="dash-stat-value">{result.duration}</p>
           </div>
-          <span className="dash-stat-trend">Top 12%</span>
+          <span className="dash-stat-trend">{result.score >= 70 ? 'Passed' : 'Failed'}</span>
         </div>
       </section>
 
       <div className="results-grid">
-        {/* Topic breakdown */}
         <section className="dash-card dash-card-wide">
           <div className="dash-card-head">
             <div>
               <h2 className="dash-card-title">Topic breakdown</h2>
               <p className="dash-card-sub">Where you shined and where to focus next</p>
             </div>
-            <span className="results-class-avg">Class avg: {result.classAvg}%</span>
           </div>
           <ul className="results-topics">
             {topicBreakdown.map((t) => {
-              const pct = Math.round((t.correct / t.total) * 100)
+              const pct = t.total > 0 ? Math.round((t.correct / t.total) * 100) : 0
               return (
                 <li key={t.topic} className="results-topic">
                   <div className="results-topic-head">
@@ -161,7 +210,6 @@ export default function ResultsPage() {
           </ul>
         </section>
 
-        {/* Insights */}
         <section className="dash-card">
           <div className="dash-card-head">
             <div>
@@ -170,22 +218,22 @@ export default function ResultsPage() {
             </div>
           </div>
           <ul className="results-insights">
-            <li>You beat your previous best by <strong>+6%</strong>.</li>
-            <li>Trees: 100% — you&apos;ve mastered this topic. 🎯</li>
-            <li>Dynamic Programming is your weakest area. We&apos;ll recommend more drills.</li>
-            <li>You averaged 78s/question, faster than the class average of 92s.</li>
+            <li>{result.score >= 80 ? 'Great job! You scored above 80%.' : result.score >= 60 ? 'Good effort! Keep practicing to improve.' : 'Keep studying! Focus on weak areas for better results.'}</li>
+            <li>You answered <strong>{result.correct}/{result.total}</strong> questions correctly ({result.score}%).</li>
+            {result.wrong > 0 && <li>Review the {result.wrong} questions you got wrong below.</li>}
+            {result.skipped > 0 && <li>You skipped {result.skipped} question{result.skipped !== 1 ? 's' : ''}. Try to answer all next time.</li>}
+            {result.flagged.length > 0 && <li>You flagged {result.flagged.length} question{result.flagged.length !== 1 ? 's' : ''} for review.</li>}
           </ul>
           <Link href="/library" className="btn btn-secondary w-full mt-4">
-            Study DP weak spots
+            Study weak spots
           </Link>
         </section>
 
-        {/* Answer review */}
         <section className="dash-card dash-card-full">
           <div className="dash-card-head">
             <div>
               <h2 className="dash-card-title">Answer review</h2>
-              <p className="dash-card-sub">Tap any question for the explanation</p>
+              <p className="dash-card-sub">Review your answers below</p>
             </div>
             <div className="results-filter">
               <HiOutlineFilter />

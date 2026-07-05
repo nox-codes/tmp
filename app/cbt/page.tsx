@@ -260,7 +260,10 @@ export default function CBTPage() {
                 <strong>{mode === "timed" ? `${duration} min timer` : "Practice mode"}</strong>
               </p>
             </div>
-            <Link href="/cbt/exam" className="btn btn-primary">
+            <Link
+              href={`/cbt/exam?course=${encodeURIComponent(selected.code)}&name=${encodeURIComponent(selected.name)}&q=${selectedQuestionCount}&dur=${duration}&mode=${mode}`}
+              className="btn btn-primary"
+            >
               <HiOutlineLightningBolt /> Start CBT
             </Link>
           </div>

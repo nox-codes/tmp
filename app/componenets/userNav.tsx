@@ -8,11 +8,14 @@ import { IoCogSharp } from "react-icons/io5";
 import { HiLightningBolt } from "react-icons/hi";
 import NotificationPopup from "./NotificationPopup";
 import { notifications, getUnreadCount } from "../data/notifications";
+import { useAuth } from "../lib/auth-context";
 
 export default function UserNav() {
   const [showNotifs, setShowNotifs] = useState(false)
   const bellRef = useRef<HTMLAnchorElement>(null)
   const unread = getUnreadCount(notifications)
+  const { user, gender } = useAuth()
+  const avatarSrc = gender === 'female' ? '/female-avatar.svg' : '/male-avatar.svg'
 
   return (
     <nav className="nav-bar">
@@ -48,8 +51,13 @@ export default function UserNav() {
             <IoCogSharp />
           </Link>
           <Link className="user-nav-avatar" href="/profile" aria-label="Profile">
-            <Image width={36} height={36} src="/male-avatar.svg" alt="Profile" />
+            <Image width={36} height={36} src={avatarSrc} alt="Profile" />
           </Link>
+          {user && (
+            <span className="hidden md:inline text-sm text-[var(--text-mute)] ml-1">
+              {user.username}
+            </span>
+          )}
         </div>
       </div>
     </nav>

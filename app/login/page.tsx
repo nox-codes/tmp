@@ -1,12 +1,12 @@
 'use client'
 
 import Link from "next/link"
-import Image from "next/image"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { FcGoogle } from "react-icons/fc"
 import { HiOutlineEye, HiOutlineEyeOff } from "react-icons/hi"
-import { getApiBaseUrl, loginUser, saveSession } from "../lib/api"
+import { loginUser } from "../lib/api"
+import { useAuth } from "../lib/auth-context"
 import ComingSoonAction from "../componenets/ComingSoonAction"
 
 export default function Login() {
@@ -14,6 +14,7 @@ export default function Login() {
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
   const router = useRouter()
+  const { login } = useAuth()
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -26,7 +27,7 @@ export default function Login() {
 
     try {
       const user = await loginUser(email, password)
-      saveSession(user)
+      login(user)
       router.push("/dashboard")
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to log in right now.")
@@ -37,7 +38,6 @@ export default function Login() {
 
   return (
     <div className="auth-split">
-      {/* Brand panel */}
       <aside className="auth-brand">
         <div className="auth-brand-content">
           <h2 className="auth-brand-heading">
@@ -73,15 +73,7 @@ export default function Login() {
         </div>
       </aside>
 
-      {/* Form panel */}
       <main className="auth-form-panel">
-        {/* <div className="auth-form-mobile-logo">
-          <Link href="/" className="footer-brand">
-            <Image width={32} height={32} src="logo-nobg.png" alt="UniLock" />
-            <span className="footer-brand-text">UniLock</span>
-          </Link>
-        </div> */}
-
         <form className="auth-form" onSubmit={handleSubmit}>
           <h1 className="auth-form-title">Log in to UniLock</h1>
           <p className="auth-form-sub">
@@ -89,7 +81,7 @@ export default function Login() {
             <Link href="/register" className="auth-link">Create an account</Link>
           </p>
 
-          <button type="button" className="auth-social" onClick={() => { window.location.href = `${getApiBaseUrl()}/auth/google` }}>
+          <button type="button" className="auth-social" onClick={() => { window.location.href = '/api/backend/auth/google' }}>
             <FcGoogle className="h-5 w-5" />
             <span>Continue with Google</span>
           </button>
@@ -109,7 +101,7 @@ export default function Login() {
               <ComingSoonAction
                 className="auth-link auth-forgot auth-link-button"
                 title="Password reset"
-                message="The backend reset endpoints exist, but the reset email screen is not built into the product yet."
+                message="The reset email screen is not built into the product yet."
               >
                 Forgot?
               </ComingSoonAction>

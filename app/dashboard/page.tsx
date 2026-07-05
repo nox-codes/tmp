@@ -1,4 +1,7 @@
+'use client'
+
 import Link from "next/link"
+import { useEffect, useState } from "react"
 import {
   HiOutlineFire,
   HiOutlineClock,
@@ -8,8 +11,9 @@ import {
   HiOutlineChevronRight,
   HiOutlineCheckCircle,
 } from "react-icons/hi"
+import { fetchCourses, type CourseApiItem } from "../lib/api"
+import { useRequireAuth } from "../lib/auth-context"
 
-// ── Mock data ──────────────────────────────────────────────────────────────
 const stats = [
   { label: "Current GPA",      value: "4.32", trend: "+0.18", color: "teal",   Icon: HiOutlineAcademicCap },
   { label: "Study streak",     value: "12 days", trend: "🔥",    color: "amber",  Icon: HiOutlineFire },
@@ -18,7 +22,6 @@ const stats = [
 ]
 
 const gpaTrend = [3.5, 3.7, 3.6, 3.9, 4.0, 4.1, 4.32]
-const gpaMax = 5
 const gpaLabels = ["1L1", "1L2", "2L1", "2L2", "3L1", "3L2", "Now"]
 
 const recentCBT = [
@@ -26,19 +29,6 @@ const recentCBT = [
   { course: "MTH 201 — Calculus II",  score: 76, attempted: "Yesterday",  questions: 30 },
   { course: "STA 211 — Probability",  score: 92, attempted: "2 days ago", questions: 25 },
   { course: "ENG 201 — Use of English", score: 81, attempted: "3 days ago", questions: 35 },
-]
-
-const courses = [
-  { code: "CSC 312", name: "Algorithms & Complexity",   progress: 78, units: 3, color: "teal" },
-  { code: "MTH 201", name: "Calculus II",               progress: 62, units: 4, color: "amber" },
-  { code: "STA 211", name: "Probability & Statistics",  progress: 91, units: 3, color: "green" },
-  { code: "PHY 102", name: "General Physics II",        progress: 45, units: 3, color: "purple" },
-]
-
-const recommended = [
-  { code: "CSC 314", name: "Operating Systems",     reason: "Based on your strength in CSC 312" },
-  { code: "MTH 202", name: "Linear Algebra",        reason: "Builds on Calculus II progress" },
-  { code: "CSC 318", name: "Software Engineering",  reason: "Highly rated by your classmates" },
 ]
 
 const upcoming = [
@@ -55,7 +45,6 @@ const leaderboard = [
   { rank: 5, name: "Halima Y.",    pts: 4150, you: false },
 ]
 
-// 12-week streak heatmap data (0–4 intensity)
 const heatmap = Array.from({ length: 84 }, (_, i) => {
   const seed = (i * 7 + 3) % 11
   if (seed < 2) return 0
@@ -65,6 +54,8 @@ const heatmap = Array.from({ length: 84 }, (_, i) => {
   return 4
 })
 
+const COLORS = ["teal", "amber", "green", "purple"]
+
 const STAT_BG: Record<string, string> = {
   teal:   "bg-teal-500/10 text-teal-400",
   amber:  "bg-amber-500/10 text-amber-400",
@@ -72,22 +63,68 @@ const STAT_BG: Record<string, string> = {
   purple: "bg-violet-500/10 text-violet-400",
 }
 
-const PROGRESS_BG: Record<string, string> = {
-  teal:   "bg-teal-400",
-  amber:  "bg-amber-400",
-  green:  "bg-emerald-400",
-  purple: "bg-violet-400",
-}
-
 export default function Dashboard() {
+  const { user } = useRequireAuth()
+  const [backendCourses, setBackendCourses] = useState<CourseApiItem[]>([])
+  const [courseNote, setCourseNote] = useState("")
+
+  useEffect(() => {
+    let active = true
+    async function load() {
+      try {
+        const courses = await fetchCourses()
+        if (!active) return
+        if (Array.isArray(courses) && courses.length > 0) {
+          setBackendCourses(courses)
+          setCourseNote("Synced with backend course data.")
+        } else {
+          setCourseNote("")
+        }
+      } catch {
+        if (active) setCourseNote("")
+      }
+    }
+    load()
+    return () => { active = false }
+  }, [])
+
+  const displayCourses = backendCourses.length > 0
+    ? backendCourses.slice(0, 4).map((c, i) => ({
+        code: c.code,
+        name: c.title,
+        progress: Math.min(100, (c.questions?.length ?? 0) * 10),
+        units: c.units,
+        color: COLORS[i % COLORS.length],
+      }))
+    : [
+        { code: "CSC 312", name: "Algorithms & Complexity",   progress: 78, units: 3, color: "teal" },
+        { code: "MTH 201", name: "Calculus II",               progress: 62, units: 4, color: "amber" },
+        { code: "STA 211", name: "Probability & Statistics",  progress: 91, units: 3, color: "green" },
+        { code: "PHY 102", name: "General Physics II",        progress: 45, units: 3, color: "purple" },
+      ]
+
+  const recommended = backendCourses.length > 0
+    ? backendCourses.slice(4, 7).map((c) => ({
+        code: c.code,
+        name: c.title,
+        reason: "Available in your course library",
+      }))
+    : [
+        { code: "CSC 314", name: "Operating Systems",     reason: "Based on your strength in CSC 312" },
+        { code: "MTH 202", name: "Linear Algebra",        reason: "Builds on Calculus II progress" },
+        { code: "CSC 318", name: "Software Engineering",  reason: "Highly rated by your classmates" },
+      ]
+
+  const name = user?.username?.split(" ")[0] ?? "Student"
+
   return (
     <div className="dash">
-      {/* Welcome */}
       <div className="dash-welcome">
         <div>
-          <h1 className="dash-welcome-title display">Welcome back, Nox</h1>
+          <h1 className="dash-welcome-title display">Welcome back, {name}</h1>
           <p className="dash-welcome-sub">
             You&apos;ve studied <strong className="text-[var(--text)]">3 hours</strong> this week. Keep that 12-day streak alive.
+            {courseNote && <span className="dash-welcome-note ml-2">· {courseNote}</span>}
           </p>
         </div>
         <div className="dash-welcome-actions">
@@ -98,7 +135,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Stat cards */}
       <section className="dash-stats">
         {stats.map((s) => (
           <div key={s.label} className="dash-stat p-6 md:p-7">
@@ -114,9 +150,7 @@ export default function Dashboard() {
         ))}
       </section>
 
-      {/* Main grid */}
       <div className="dash-grid">
-        {/* GPA chart */}
         <section className="dash-card dash-card-wide p-8 md:p-10">
           <div className="dash-card-head">
             <div>
@@ -139,34 +173,24 @@ export default function Dashboard() {
                 <line key={g} x1={0} x2={700} y1={(g * 200) / 4} y2={(g * 200) / 4} stroke="rgba(148,163,184,0.08)" />
               ))}
               <path
-                d={
-                  gpaTrend
-                    .map((v, i) => {
-                      const x = (i * 700) / (gpaTrend.length - 1)
-                      const y = 200 - (v / gpaMax) * 200
-                      return `${i === 0 ? "M" : "L"} ${x} ${y}`
-                    })
-                    .join(" ") + ` L 700 200 L 0 200 Z`
-                }
+                d={gpaTrend.map((v, i) => {
+                  const x = (i * 700) / (gpaTrend.length - 1)
+                  const y = 200 - (v / 5) * 200
+                  return `${i === 0 ? "M" : "L"} ${x} ${y}`
+                }).join(" ") + ` L 700 200 L 0 200 Z`}
                 fill="url(#gpaArea)"
               />
               <path
-                d={gpaTrend
-                  .map((v, i) => {
-                    const x = (i * 700) / (gpaTrend.length - 1)
-                    const y = 200 - (v / gpaMax) * 200
-                    return `${i === 0 ? "M" : "L"} ${x} ${y}`
-                  })
-                  .join(" ")}
-                fill="none"
-                stroke="#2dd4bf"
-                strokeWidth="3"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+                d={gpaTrend.map((v, i) => {
+                  const x = (i * 700) / (gpaTrend.length - 1)
+                  const y = 200 - (v / 5) * 200
+                  return `${i === 0 ? "M" : "L"} ${x} ${y}`
+                }).join(" ")}
+                fill="none" stroke="#2dd4bf" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"
               />
               {gpaTrend.map((v, i) => {
                 const x = (i * 700) / (gpaTrend.length - 1)
-                const y = 200 - (v / gpaMax) * 200
+                const y = 200 - (v / 5) * 200
                 return (
                   <g key={i}>
                     <circle cx={x} cy={y} r={5} fill="var(--bg)" stroke="#2dd4bf" strokeWidth="2" />
@@ -180,7 +204,6 @@ export default function Dashboard() {
           </div>
         </section>
 
-        {/* Streak heatmap */}
         <section className="dash-card p-8 md:p-10">
           <div className="dash-card-head">
             <div>
@@ -204,7 +227,6 @@ export default function Dashboard() {
           </div>
         </section>
 
-        {/* Recent CBT */}
         <section className="dash-card dash-card-wide p-8 md:p-10">
           <div className="dash-card-head">
             <div>
@@ -234,7 +256,6 @@ export default function Dashboard() {
           </ul>
         </section>
 
-        {/* Course progress */}
         <section className="dash-card p-8 md:p-10">
           <div className="dash-card-head">
             <div>
@@ -244,7 +265,7 @@ export default function Dashboard() {
             <Link href="/library" className="dash-card-link">Library <HiOutlineChevronRight /></Link>
           </div>
           <ul className="dash-courses mt-8 space-y-6">
-            {courses.map((c) => (
+            {displayCourses.map((c) => (
               <li key={c.code} className="dash-course">
                 <div className="dash-course-head">
                   <span className="dash-course-code text-base">{c.code}</span>
@@ -252,14 +273,16 @@ export default function Dashboard() {
                 </div>
                 <p className="dash-course-name text-base">{c.name}</p>
                 <div className="dash-progress mt-3">
-                  <span className={`dash-progress-fill ${PROGRESS_BG[c.color]}`} style={{ width: `${c.progress}%` }} />
+                  <span
+                    className={`dash-progress-fill ${c.color === "teal" ? "bg-teal-400" : c.color === "amber" ? "bg-amber-400" : c.color === "green" ? "bg-emerald-400" : "bg-violet-400"}`}
+                    style={{ width: `${c.progress}%` }}
+                  />
                 </div>
               </li>
             ))}
           </ul>
         </section>
 
-        {/* Upcoming */}
         <section className="dash-card p-8 md:p-10">
           <div className="dash-card-head">
             <div>
@@ -281,7 +304,6 @@ export default function Dashboard() {
           </ul>
         </section>
 
-        {/* Recommended */}
         <section className="dash-card p-8 md:p-10">
           <div className="dash-card-head">
             <div>
@@ -303,7 +325,6 @@ export default function Dashboard() {
           </ul>
         </section>
 
-        {/* Leaderboard */}
         <section className="dash-card p-8 md:p-10">
           <div className="dash-card-head">
             <div>
