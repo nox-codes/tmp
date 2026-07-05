@@ -13,6 +13,7 @@ export default function Login() {
   const [show, setShow] = useState(false)
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
+  const [rememberMe, setRememberMe] = useState(true)
   const router = useRouter()
   const { login } = useAuth()
 
@@ -27,7 +28,7 @@ export default function Login() {
 
     try {
       const user = await loginUser(email, password)
-      login(user)
+      login(user, rememberMe)
       router.push("/dashboard")
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to log in right now.")
@@ -127,7 +128,7 @@ export default function Login() {
           </div>
 
           <label className="auth-checkbox">
-            <input type="checkbox" />
+            <input type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} />
             <span>Keep me signed in on this device</span>
           </label>
 

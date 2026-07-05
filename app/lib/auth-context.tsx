@@ -10,8 +10,12 @@ const GENDER_COOKIE = 'unilock_gender'
 
 function setCookie(name: string, value: string, days: number) {
   if (typeof document === 'undefined') return
-  const expires = new Date(Date.now() + days * 86400000).toUTCString()
-  document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/; SameSite=Lax`
+  if (days > 0) {
+    const expires = new Date(Date.now() + days * 86400000).toUTCString()
+    document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/; SameSite=Lax`
+  } else {
+    document.cookie = `${name}=${encodeURIComponent(value)}; path=/; SameSite=Lax`
+  }
 }
 
 function getCookie(name: string): string | null {
@@ -31,7 +35,7 @@ type SessionData = {
 type AuthContextValue = {
   user: AuthUser | null
   loading: boolean
-  login: (user: AuthUser) => void
+  login: (user: AuthUser, rememberMe?: boolean) => void
   logout: () => void
   refreshUser: () => Promise<void>
   refreshUserData: () => Promise<void>
@@ -87,9 +91,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => { active = false }
   }, [])
 
-  const login = useCallback((userData: AuthUser) => {
+  const login = useCallback((userData: AuthUser, rememberMe = true) => {
     const session: SessionData = { user: userData }
-    setCookie(SESSION_COOKIE, JSON.stringify(session), 30)
+    setCookie(SESSION_COOKIE, JSON.stringify(session), rememberMe ? 30 : 0)
     setUser(userData)
   }, [])
 

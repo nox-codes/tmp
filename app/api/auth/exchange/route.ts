@@ -1,14 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-function decodeJwtPayload(token: string) {
-  try {
-    const parts = token.split('.')
-    const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString())
-    return payload as { sub?: string; username?: string }
-  } catch {
-    return null
-  }
-}
+const backendUrl = process.env.BACKEND_URL || 'http://localhost:3001'
 
 export async function GET(request: NextRequest) {
   const accessToken = request.cookies.get('access_token')?.value
@@ -24,7 +16,7 @@ export async function GET(request: NextRequest) {
 
   if (refreshToken) {
     try {
-      const res = await fetch('http://localhost:3001/auth/refresh', {
+      const res = await fetch(`${backendUrl}/auth/refresh`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ refresh: refreshToken }),
@@ -37,6 +29,16 @@ export async function GET(request: NextRequest) {
         }
       }
     } catch {}
+  }
+
+  function decodeJwtPayload(token: string) {
+    try {
+      const parts = token.split('.')
+      const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString())
+      return payload as { sub?: string; username?: string }
+    } catch {
+      return null
+    }
   }
 
   const payload = decodeJwtPayload(finalAccess || finalRefresh)
