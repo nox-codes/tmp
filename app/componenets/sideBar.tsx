@@ -1,5 +1,6 @@
 'use client'
 
+import { useMemo } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import {
@@ -29,10 +30,43 @@ const secondary = [
   { href: "/settings", label: "Settings", Icon: HiOutlineCog },
 ]
 
+function toDateKey(ts: string) {
+  const d = new Date(ts)
+  return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`
+}
+
+function computeStreak(): number {
+  if (typeof window === "undefined") return 0
+  let raw: string | null = null
+  try { raw = localStorage.getItem("cbt_history") } catch { return 0 }
+  if (!raw) return 0
+  let history: { timestamp: string }[] = []
+  try { history = JSON.parse(raw) } catch { return 0 }
+  if (history.length === 0) return 0
+
+  const activeDays = new Set(history.map(h => toDateKey(h.timestamp)))
+  const today = toDateKey(new Date().toISOString())
+  const yesterday = toDateKey(new Date(Date.now() - 86400000).toISOString())
+
+  if (!activeDays.has(today) && !activeDays.has(yesterday)) return 0
+
+  const start = activeDays.has(today) ? today : yesterday
+  let streak = 0
+  const d = new Date(start)
+  while (true) {
+    const key = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`
+    if (!activeDays.has(key)) break
+    streak++
+    d.setDate(d.getDate() - 1)
+  }
+  return streak
+}
+
 export default function SideBar() {
   const pathname = usePathname()
   const router = useRouter()
   const { logout } = useAuth()
+  const streak = useMemo(() => computeStreak(), [])
   const isActive = (href: string) =>
     href === "/dashboard" ? pathname === href : pathname.startsWith(href)
 
@@ -77,9 +111,9 @@ export default function SideBar() {
         </button>
       </nav>
 
-      <div className="sidebar-streak" data-tooltip="12-day streak">
+      <div className="sidebar-streak" data-tooltip={`${streak}-day streak`}>
         <span className="sidebar-streak-flame">🔥</span>
-        <span className="sidebar-streak-count">12</span>
+        <span className="sidebar-streak-count">{streak}</span>
       </div>
     </aside>
   )

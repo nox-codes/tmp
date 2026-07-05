@@ -1,5 +1,6 @@
 'use client'
 
+import { useMemo } from "react"
 import Image from "next/image"
 import {
   HiOutlineMail,
@@ -8,15 +9,66 @@ import {
   HiOutlineCalendar,
   HiOutlinePencil,
   HiOutlineFire,
-  HiOutlineLightningBolt,
   HiOutlineStar,
 } from "react-icons/hi"
 import { useAuth } from "../lib/auth-context"
 import ComingSoonAction from "../componenets/ComingSoonAction"
 
+type CbtResult = {
+  courseCode: string
+  courseName: string
+  score: number
+  duration: string
+  timestamp: string
+}
+
+function toDateKey(ts: string) {
+  const d = new Date(ts)
+  return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`
+}
+
+function computeStreak(history: CbtResult[]): number {
+  if (history.length === 0) return 0
+  const activeDays = new Set(history.map(h => toDateKey(h.timestamp)))
+  const today = toDateKey(new Date().toISOString())
+  const yesterday = toDateKey(new Date(Date.now() - 86400000).toISOString())
+  if (!activeDays.has(today) && !activeDays.has(yesterday)) return 0
+  const start = activeDays.has(today) ? today : yesterday
+  let streak = 0
+  const d = new Date(start)
+  while (true) {
+    const key = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`
+    if (!activeDays.has(key)) break
+    streak++
+    d.setDate(d.getDate() - 1)
+  }
+  return streak
+}
+
+function loadHistory(): CbtResult[] {
+  if (typeof window === "undefined") return []
+  try {
+    const raw = localStorage.getItem("cbt_history")
+    return raw ? JSON.parse(raw) : []
+  } catch {
+    return []
+  }
+}
+
 export default function Profile() {
   const { user, gender } = useAuth()
   const avatarSrc = gender === 'female' ? '/female-avatar.svg' : '/male-avatar.svg'
+
+  const history = useMemo(() => loadHistory(), [])
+  const totalCbts = history.length
+  const avgScore = totalCbts > 0 ? Math.round(history.reduce((s, r) => s + r.score, 0) / totalCbts) : 0
+  const totalMinutes = history.reduce((s, r) => {
+    const m = parseInt(r.duration)
+    return s + (isNaN(m) ? 0 : m)
+  }, 0)
+  const lastScore = totalCbts > 0 ? history[totalCbts - 1].score : null
+  const totalHours = Math.round(totalMinutes / 60)
+  const streak = useMemo(() => computeStreak(history), [history])
 
   const displayName = user?.username ?? "Student"
   const email = user?.email ?? "student@unilag.edu.ng"
@@ -41,8 +93,8 @@ export default function Profile() {
               <span className={`profile-badge ${tier !== 'FREE' ? 'profile-badge-pro' : ''}`}>
                 <HiOutlineStar /> {tierBadge}
               </span>
-              <span className="profile-badge"><HiOutlineFire /> 12-day streak</span>
-              <span className="profile-badge"><HiOutlineLightningBolt /> Top 12%</span>
+              <span className="profile-badge"><HiOutlineFire /> {streak}-day streak</span>
+
             </div>
           </div>
           <ComingSoonAction className="btn btn-secondary" title="Profile editing">
@@ -76,19 +128,19 @@ export default function Profile() {
           </div>
           <div className="profile-stats">
             <div className="profile-stat">
-              <p className="profile-stat-val">4.32</p>
-              <p className="profile-stat-lbl">Current GPA</p>
+              <p className="profile-stat-val">{lastScore !== null ? `${lastScore}%` : "—"}</p>
+              <p className="profile-stat-lbl">Latest score</p>
             </div>
             <div className="profile-stat">
-              <p className="profile-stat-val">142</p>
+              <p className="profile-stat-val">{totalCbts}</p>
               <p className="profile-stat-lbl">CBTs taken</p>
             </div>
             <div className="profile-stat">
-              <p className="profile-stat-val">82%</p>
+              <p className="profile-stat-val">{totalCbts > 0 ? `${avgScore}%` : "—"}</p>
               <p className="profile-stat-lbl">Avg score</p>
             </div>
             <div className="profile-stat">
-              <p className="profile-stat-val">68 hr</p>
+              <p className="profile-stat-val">{totalHours > 0 ? `${totalHours} hr` : "—"}</p>
               <p className="profile-stat-lbl">Study time</p>
             </div>
           </div>
