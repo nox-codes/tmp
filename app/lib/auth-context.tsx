@@ -69,6 +69,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } catch {}
       }
 
+      if (!raw) {
+        try {
+          const exchangeRes = await fetch('/api/auth/exchange')
+          if (exchangeRes.ok && active) {
+            const data = await exchangeRes.json()
+            if (data.accessToken && data.user) {
+              const session: SessionData = { user: data.user }
+              setCookie(SESSION_COOKIE, JSON.stringify(session), 30)
+              if (active) setUser(data.user)
+              if (active) setLoading(false)
+              return
+            }
+          }
+        } catch {}
+      }
+
       const savedGender = getCookie(GENDER_COOKIE)
       if (savedGender === 'female' || savedGender === 'male') {
         if (active) setGenderState(savedGender)

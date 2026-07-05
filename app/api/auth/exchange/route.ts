@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
 
   const token = accessToken || refreshToken
   if (!token) {
-    return NextResponse.redirect(new URL('/login', request.url))
+    return NextResponse.json({ error: 'no_session' }, { status: 401 })
   }
 
   let finalAccess = accessToken || ''
@@ -42,27 +42,18 @@ export async function GET(request: NextRequest) {
   }
 
   const payload = decodeJwtPayload(finalAccess || finalRefresh)
-  if (!payload?.sub) {
-    return NextResponse.redirect(new URL('/login', request.url))
-  }
+  const id = payload?.sub || ''
+  const email = payload?.username || ''
 
-  const email = payload.username || ''
-  const sessionData = JSON.stringify({
+  return NextResponse.json({
+    accessToken: finalAccess,
+    refreshToken: finalRefresh,
     user: {
-      id: payload.sub,
+      id,
       email,
       username: email,
       accessToken: finalAccess,
       refreshToken: finalRefresh,
     },
   })
-
-  const response = NextResponse.redirect(new URL('/', request.url))
-  response.cookies.set('unilock_session', sessionData, {
-    path: '/',
-    sameSite: 'lax',
-    maxAge: 30 * 86400,
-  })
-
-  return response
 }
