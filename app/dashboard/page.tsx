@@ -83,7 +83,7 @@ export default function Dashboard() {
           setCourseNote("")
         }
       } catch {
-        if (active) setCourseNote("")
+        if (active) setCourseNote("Could not load courses from server.")
       }
     }
     load()

@@ -8,7 +8,6 @@ import {
   HiOutlineCreditCard,
   HiOutlineShieldCheck,
   HiOutlineGlobe,
-  HiOutlineLogout,
 } from "react-icons/hi"
 import { useAuth } from "../lib/auth-context"
 import { checkout } from "../lib/api"
@@ -77,13 +76,6 @@ export default function Settings() {
                 <s.Icon className="h-5 w-5 shrink-0" /> {s.label}
               </button>
             ))}
-            <div className="my-4 h-px bg-[var(--line)] mx-2" />
-            <button
-              onClick={() => { logout() }}
-              className="w-full flex items-center gap-4 rounded-xl px-5 py-4 text-sm font-medium text-rose-500 hover:bg-rose-500/10 transition-colors cursor-pointer"
-            >
-              <HiOutlineLogout className="h-5 w-5 shrink-0" /> Log out
-            </button>
           </nav>
         </aside>
 
@@ -177,7 +169,7 @@ export default function Settings() {
                         disabled={billingLoading}
                         className="btn btn-primary px-10 py-4 text-base"
                       >
-                        {billingLoading ? 'Processing...' : 'Upgrade to Basic - ₦2,500/mo'}
+                        {billingLoading ? 'Processing...' : 'Upgrade to Basic - ₦500/mo'}
                       </button>
                     )}
                     {currentTier !== 'FULL' && (
@@ -186,7 +178,7 @@ export default function Settings() {
                         disabled={billingLoading}
                         className="btn btn-secondary px-10 py-4 text-base"
                       >
-                        {billingLoading ? 'Processing...' : 'Upgrade to Pro - ₦7,000/sem'}
+                        {billingLoading ? 'Processing...' : 'Upgrade to Pro - ₦1,000/mo'}
                       </button>
                     )}
                     {currentTier === 'FULL' && (

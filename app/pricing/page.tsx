@@ -6,6 +6,8 @@ import ScrollReveal from "../componenets/scrollReveal"
 import Footer from "../componenets/landing/Footer"
 import { HiCheck, HiX } from "react-icons/hi"
 import { checkout, Tier } from "../lib/api"
+import { useAuth } from "../lib/auth-context"
+import { useRouter } from "next/navigation"
 import ComingSoonAction from "../componenets/ComingSoonAction"
 
 type Cycle = "monthly" | "yearly"
@@ -24,7 +26,7 @@ const monthlyPlans = [
   },
   {
     name: "Basic",
-    price: "₦2,500",
+    price: "₦500",
     period: "/month",
     description: "For the serious student who wants every tool.",
     features: ["All courses", "Unlimited CBT", "Full analytics dashboard", "Performance tracking", "Study groups", "Priority support"],
@@ -35,9 +37,9 @@ const monthlyPlans = [
   },
   {
     name: "Premium",
-    price: "₦7,000",
-    period: "/semester",
-    description: "Save ~20% vs paying monthly.",
+    price: "₦1,000",
+    period: "/month",
+    description: "Everything in Basic plus coaching.",
     features: ["Everything in Basic", "1-on-1 study coaching", "Custom study plans", "Offline downloads", "Early feature access"],
     cta: "Get Pro",
     href: "/register",
@@ -58,8 +60,8 @@ const monthlyPlans = [
 ]
 
 const yearlyPlans = monthlyPlans.map(p => {
-  if (p.name === "Basic") return { ...p, price: "₦24,000", period: "/year", description: "20% off vs monthly. Best value." }
-  if (p.name === "Premium") return { ...p, price: "₦12,000", period: "/year", description: "Lock in a full session of savings." }
+  if (p.name === "Basic") return { ...p, price: "₦4,800", period: "/year", description: "20% off vs monthly. Best value." }
+  if (p.name === "Premium") return { ...p, price: "₦9,600", period: "/year", description: "Lock in a full session of savings." }
   return p
 })
 
@@ -83,6 +85,8 @@ const faqs = [
 ]
 
 export default function Pricing() {
+  const { user } = useAuth()
+  const router = useRouter()
   const [cycle, setCycle] = useState<Cycle>("monthly")
   const [loadingPlan, setLoadingPlan] = useState("")
   const [error, setError] = useState("")
@@ -90,6 +94,12 @@ export default function Pricing() {
 
   async function handleCheckout(planName: string, tier: Tier | null) {
     if (!tier || tier === "FREE") return
+
+    if (!user) {
+      sessionStorage.setItem("pending_checkout", tier)
+      router.push("/login")
+      return
+    }
 
     setError("")
     setLoadingPlan(planName)

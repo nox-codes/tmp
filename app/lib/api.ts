@@ -194,7 +194,7 @@ export function resendOtp(email: string) {
 }
 
 export function fetchCourses() {
-  return apiRequest<CourseApiItem[]>('/course', { auth: true })
+  return apiRequest<CourseApiItem[]>('/courses', { auth: true })
 }
 
 export function fetchQuestions() {
@@ -206,7 +206,7 @@ export function fetchQuestionById(id: string) {
 }
 
 export function fetchCourseById(id: string) {
-  return apiRequest<CourseApiItem>(`/course/${id}`)
+  return apiRequest<CourseApiItem>(`/courses/${id}`)
 }
 
 export function fetchQuestionsByCourse(courseCode: string) {

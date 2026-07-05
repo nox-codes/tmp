@@ -2,8 +2,8 @@
 
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
-import type { AuthUser } from './api'
-import { getApiBaseUrl } from './api'
+import type { AuthUser, Tier } from './api'
+import { getApiBaseUrl, checkout } from './api'
 
 const SESSION_COOKIE = 'unilock_session'
 const GENDER_COOKIE = 'unilock_gender'
@@ -69,22 +69,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } catch {}
       }
 
-      if (!raw) {
-        try {
-          const exchangeRes = await fetch('/api/auth/exchange')
-          if (exchangeRes.ok && active) {
-            const data = await exchangeRes.json()
-            if (data.accessToken && data.user) {
-              const session: SessionData = { user: data.user }
-              setCookie(SESSION_COOKIE, JSON.stringify(session), 30)
-              if (active) setUser(data.user)
-              if (active) setLoading(false)
-              return
-            }
-          }
-        } catch {}
-      }
-
       const savedGender = getCookie(GENDER_COOKIE)
       if (savedGender === 'female' || savedGender === 'male') {
         if (active) setGenderState(savedGender)
@@ -94,6 +78,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     init()
     return () => { active = false }
   }, [])
+
+  useEffect(() => {
+    if (loading || !user) return
+    const pending = sessionStorage.getItem('pending_checkout') as Tier | null
+    if (pending === 'HALF' || pending === 'FULL') {
+      sessionStorage.removeItem('pending_checkout')
+      checkout(pending).then(res => {
+        window.location.href = res.checkoutUrl
+      }).catch(() => {})
+    }
+  }, [user, loading])
 
   const login = useCallback((userData: AuthUser, rememberMe = true) => {
     const session: SessionData = { user: userData }

@@ -14,7 +14,7 @@ const plans = [
   },
   {
     name: "Basic",
-    price: "₦2,500",
+    price: "₦500",
     period: "/month",
     description: "Most popular for serious students",
     features: ["All courses", "Unlimited CBT", "Full analytics dashboard", "Performance tracking", "Study groups", "Priority support"],
@@ -24,9 +24,9 @@ const plans = [
   },
   {
     name: "Premium",
-    price: "₦7,000",
-    period: "/semester",
-    description: "Save 20% for longer commitment",
+    price: "₦1,000",
+    period: "/month",
+    description: "Everything in Basic plus coaching",
     features: ["Everything in Basic", "1-on-1 study coaching", "Custom study plans", "Offline access", "Early feature access"],
     cta: "Get Pro",
     href: "/register",
