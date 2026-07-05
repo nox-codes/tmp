@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import http from 'http'
 import https from 'https'
 
@@ -13,23 +13,7 @@ export async function PATCH(request: NextRequest) { return proxy(request) }
 export async function PUT(request: NextRequest) { return proxy(request) }
 export async function DELETE(request: NextRequest) { return proxy(request) }
 
-function parseSetCookie(setCookieStr: string): { name: string; value: string; options: Record<string, string> } {
-  const parts = setCookieStr.split(';').map(s => s.trim())
-  const [name, ...rest] = parts[0].split('=')
-  const value = rest.join('=')
-  const options: Record<string, string> = {}
-  for (let i = 1; i < parts.length; i++) {
-    const eqIdx = parts[i].indexOf('=')
-    if (eqIdx === -1) {
-      options[parts[i].toLowerCase()] = 'true'
-    } else {
-      options[parts[i].slice(0, eqIdx).toLowerCase().trim()] = parts[i].slice(eqIdx + 1).trim()
-    }
-  }
-  return { name, value, options }
-}
-
-async function proxy(request: NextRequest): Promise<NextResponse> {
+async function proxy(request: NextRequest): Promise<Response> {
   const path = request.nextUrl.pathname.replace('/api/backend', '')
   const search = request.nextUrl.search
 
@@ -57,43 +41,33 @@ async function proxy(request: NextRequest): Promise<NextResponse> {
     }
 
     const proxyReq = requester.request(options, (proxyRes) => {
+      const raw = proxyRes.rawHeaders || []
+      const setCookies: string[] = []
+      const location = proxyRes.headers['location'] || ''
+      const responseHeaders = new Headers()
+
+      for (let i = 0; i < raw.length; i += 2) {
+        const key = raw[i]
+        const val = raw[i + 1]
+        if (key.toLowerCase() === 'set-cookie') {
+          setCookies.push(val)
+        } else if (key.toLowerCase() !== 'content-length') {
+          responseHeaders.set(key, val)
+        }
+      }
+
+      // Set cookies directly as raw Set-Cookie headers
+      for (const sc of setCookies) {
+        responseHeaders.append('Set-Cookie', sc)
+      }
+
       const chunks: Buffer[] = []
       proxyRes.on('data', (chunk: Buffer) => chunks.push(chunk))
       proxyRes.on('end', () => {
-        // Handle redirects — use NextResponse.redirect + cookies API
-        if (proxyRes.statusCode && proxyRes.statusCode >= 300 && proxyRes.statusCode < 400) {
-          const location = proxyRes.headers['location'] || ''
-          const redirectRes = NextResponse.redirect(new URL(location, request.url))
-
-          const raw = proxyRes.rawHeaders || []
-          for (let i = 0; i < raw.length; i += 2) {
-            if (raw[i].toLowerCase() === 'set-cookie') {
-              const cookie = parseSetCookie(raw[i + 1])
-              const maxAge = cookie.options['max-age']
-              redirectRes.cookies.set(cookie.name, cookie.value, {
-                path: cookie.options['path'] || '/',
-                httpOnly: cookie.options['httponly'] === 'true',
-                sameSite: cookie.options['samesite'] as 'lax' | 'strict' | 'none' | undefined,
-                secure: cookie.options['secure'] === 'true',
-                maxAge: maxAge ? parseInt(maxAge) : undefined,
-              })
-            }
-          }
-
-          resolve(redirectRes)
-          return
-        }
-
-        // Non-redirect: forward body + headers
-        const responseHeaders = new Headers()
-        const raw = proxyRes.rawHeaders || []
-        for (let i = 0; i < raw.length; i += 2) {
-          if (raw[i].toLowerCase() !== 'set-cookie') {
-            responseHeaders.set(raw[i], raw[i + 1])
-          }
-        }
-
-        resolve(new NextResponse(Buffer.concat(chunks), {
+        const body = proxyRes.statusCode === 204 || proxyRes.statusCode === 304
+          ? null
+          : Buffer.concat(chunks)
+        resolve(new Response(body, {
           status: proxyRes.statusCode,
           statusText: proxyRes.statusMessage,
           headers: responseHeaders,
@@ -102,10 +76,7 @@ async function proxy(request: NextRequest): Promise<NextResponse> {
     })
 
     proxyReq.on('error', reject)
-
-    if (body) {
-      proxyReq.write(body)
-    }
+    if (body) proxyReq.write(body)
     proxyReq.end()
   })
 }
