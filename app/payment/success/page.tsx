@@ -1,10 +1,8 @@
 'use client'
 
 import { Suspense, useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
 import { HiCheckCircle, HiXCircle, HiClock } from "react-icons/hi"
 import { updateUserTier, getApiBaseUrl } from "../../lib/api"
-import { useAuth } from "../../lib/auth-context"
 import type { Tier } from "../../lib/api"
 
 function getCookie(name: string) {
@@ -39,8 +37,6 @@ async function fetchProfileWithRefresh(): Promise<{ tier: Tier } | null> {
 }
 
 function PaymentSuccessInner() {
-  const router = useRouter()
-  const { refreshUserData } = useAuth()
   const [status, setStatus] = useState<"verifying" | "success" | "processing" | "cancelled" | "error">("verifying")
   const [errorMsg, setErrorMsg] = useState("")
   const [expectedTier, setExpectedTier] = useState<Tier | null>(null)
@@ -82,20 +78,18 @@ function PaymentSuccessInner() {
         if (tier && profile && profile.tier === tier) {
           updateUserTier(tier)
           sessionStorage.removeItem("pending_payment")
-          refreshUserData()
           setStatus("success")
-          setTimeout(() => router.replace("/dashboard"), 3000)
+          setTimeout(() => window.location.replace("/dashboard"), 3000)
         } else if (tier && profile && profile.tier !== tier) {
           setStatus("processing")
         } else if (tier && !profile) {
           setStatus("processing")
         } else {
-          refreshUserData()
           setStatus("success")
-          setTimeout(() => router.replace("/dashboard"), 3000)
+          setTimeout(() => window.location.replace("/dashboard"), 3000)
         }
       })
-  }, [router, refreshUserData, retryKey])
+  }, [retryKey])
 
   useEffect(() => {
     if (status !== "cancelled" && status !== "error") return
@@ -104,14 +98,14 @@ function PaymentSuccessInner() {
       setCountdown(prev => {
         if (prev <= 1) {
           clearInterval(timer)
-          router.replace("/settings?tab=billing")
+          window.location.replace("/settings?tab=billing")
           return 0
         }
         return prev - 1
       })
-    }, 1000)
+      }, 1000)
     return () => clearInterval(timer)
-  }, [status, router])
+  }, [status])
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[var(--bg)] px-6">
@@ -137,7 +131,7 @@ function PaymentSuccessInner() {
               </p>
             </div>
             <button
-              onClick={() => router.replace("/dashboard")}
+              onClick={() => window.location.replace("/dashboard")}
               className="btn btn-primary px-10 py-4 text-base"
             >
               Go to Dashboard
@@ -165,7 +159,7 @@ function PaymentSuccessInner() {
                 Check Again
               </button>
               <button
-                onClick={() => router.replace("/dashboard")}
+                onClick={() => window.location.replace("/dashboard")}
                 className="btn btn-secondary px-10 py-4 text-base"
               >
                 Go to Dashboard
@@ -189,7 +183,7 @@ function PaymentSuccessInner() {
               </p>
             </div>
             <button
-              onClick={() => router.replace("/settings?tab=billing")}
+              onClick={() => window.location.replace("/settings?tab=billing")}
               className="btn btn-primary px-10 py-4 text-base"
             >
               Billing Settings
@@ -211,13 +205,13 @@ function PaymentSuccessInner() {
             </div>
             <div className="flex gap-4 justify-center">
               <button
-                onClick={() => router.replace("/settings?tab=billing")}
+                onClick={() => window.location.replace("/settings?tab=billing")}
                 className="btn btn-primary px-10 py-4 text-base"
               >
                 Billing Settings
               </button>
               <button
-                onClick={() => router.replace("/dashboard")}
+                onClick={() => window.location.replace("/dashboard")}
                 className="btn btn-secondary px-10 py-4 text-base"
               >
                 Dashboard
