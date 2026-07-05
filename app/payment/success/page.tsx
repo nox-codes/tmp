@@ -14,10 +14,22 @@ function getCookie(name: string) {
 function decodeToken(token: string): Record<string, unknown> | null {
   try {
     const payload = token.split(".")[1]
-    return JSON.parse(atob(payload.replace(/-/g, "+").replace(/_/g, "/")))
+    const base64 = payload.replace(/-/g, "+").replace(/_/g, "/")
+    const padded = base64.padEnd(base64.length + (4 - (base64.length % 4)) % 4, "=")
+    return JSON.parse(atob(padded))
   } catch {
     return null
   }
+}
+
+const TIER_CLAIMS = ["tier", "role", "subscriptionTier", "userTier", "plan", "type"] as const
+
+function extractTier(claims: Record<string, unknown>): string | null {
+  for (const key of TIER_CLAIMS) {
+    const val = claims[key]
+    if (typeof val === "string" && (val === "FREE" || val === "HALF" || val === "FULL")) return val
+  }
+  return null
 }
 
 async function fetchProfileWithRefresh(): Promise<{ tier: Tier; accessToken: string } | null> {
@@ -40,8 +52,9 @@ async function fetchProfileWithRefresh(): Promise<{ tier: Tier; accessToken: str
   if (!accessToken) return null
 
   const claims = decodeToken(accessToken)
-  if (claims?.tier && typeof claims.tier === "string") {
-    return { tier: claims.tier as Tier, accessToken }
+  const tierFromClaims = claims ? extractTier(claims) : null
+  if (tierFromClaims) {
+    return { tier: tierFromClaims as Tier, accessToken }
   }
 
   const profileRes = await fetch(`${getApiBaseUrl()}/user/me`, {
@@ -101,32 +114,52 @@ function PaymentSuccessInner() {
 
     setStatus("verifying")
 
-    fetchProfileWithRefresh()
-      .then(profile => {
-        if (tier && profile && profile.tier === tier) {
+    let cancelled = false
+
+    fetchProfileWithRefresh().then(profile => {
+      if (cancelled) return
+      if (tier && profile) {
+        if (profile.tier === tier) {
           updateCookie(tier, profile.accessToken)
           sessionStorage.removeItem("pending_payment")
           setStatus("success")
-          setTimeout(() => window.location.replace("/dashboard"), 3000)
-        } else if (tier && profile && profile.tier !== tier) {
-          setStatus("processing")
-        } else if (tier && !profile) {
-          setStatus("processing")
-        } else {
-          setStatus("success")
-          setTimeout(() => window.location.replace("/dashboard"), 3000)
+          setTimeout(() => window.location.replace("/dashboard"), 2000)
+          return
         }
-      })
+      }
+      if (profile?.accessToken) {
+        updateCookie(tier ?? profile.tier, profile.accessToken)
+      }
+      setTimeout(() => {
+        if (cancelled) return
+        sessionStorage.removeItem("pending_payment")
+        if (tier) updateUserTier(tier)
+        setStatus("processing")
+      }, 5000)
+    })
+
+    setTimeout(() => {
+      if (cancelled) return
+      sessionStorage.removeItem("pending_payment")
+      if (tier) updateUserTier(tier)
+      setStatus("processing")
+    }, 8000)
+
+    return () => { cancelled = true }
   }, [retryKey])
 
   useEffect(() => {
-    if (status !== "cancelled" && status !== "error") return
-    setCountdown(7)
+    if (status !== "cancelled" && status !== "error" && status !== "processing") return
+    if (status === "processing") {
+      setCountdown(10)
+    } else {
+      setCountdown(7)
+    }
     const timer = setInterval(() => {
       setCountdown(prev => {
         if (prev <= 1) {
           clearInterval(timer)
-          window.location.replace("/settings?tab=billing")
+          window.location.replace(status === "processing" ? "/dashboard" : "/settings?tab=billing")
           return 0
         }
         return prev - 1
@@ -175,8 +208,10 @@ function PaymentSuccessInner() {
             <div className="space-y-2">
               <h1 className="text-2xl font-bold text-[var(--text)]">Still Processing</h1>
               <p className="text-[var(--text-mute)]">
-                Your payment was received but your plan is still being updated. This usually takes a few minutes.
-                You can check again or visit your dashboard.
+                Your payment was received but your plan hasn&apos;t updated yet. This usually takes a few minutes.
+              </p>
+              <p className="text-sm text-[var(--text-mute)]">
+                Redirecting to dashboard in {countdown}...
               </p>
             </div>
             <div className="flex gap-4 justify-center">
