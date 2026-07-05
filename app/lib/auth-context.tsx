@@ -69,18 +69,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } catch {}
       }
 
-      try {
-        const exchangeRes = await fetch('/api/auth/exchange')
-        if (exchangeRes.ok && active) {
-          const data = await exchangeRes.json()
-          if (data.accessToken && data.user) {
-            const session: SessionData = { user: data.user }
-            setCookie(SESSION_COOKIE, JSON.stringify(session), 30)
-            if (active) setUser(data.user)
-          }
-        }
-      } catch {}
-
       const savedGender = getCookie(GENDER_COOKIE)
       if (savedGender === 'female' || savedGender === 'male') {
         if (active) setGenderState(savedGender)

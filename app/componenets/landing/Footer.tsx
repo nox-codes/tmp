@@ -16,8 +16,8 @@ const companyLinks = [
 ]
 
 const legalLinks = [
-  { label: "Privacy Policy", href: "#" },
-  { label: "Terms of Service", href: "#" },
+  { label: "Privacy Policy", href: "/privacy" },
+  { label: "Terms of Service", href: "/terms" },
   { label: "Cookie Policy", href: "#" },
 ]
 
@@ -28,7 +28,7 @@ export default function Footer() {
         <div className="footer-grid">
           <div className="footer-brand-col">
             <Link href="/" className="footer-brand">
-              <Image width={32} height={32} src="/logo.svg" alt="UniLock" />
+              <Image width={32} height={32} src="/logo.png" alt="UniLock" />
               <span className="footer-brand-text">UniLock</span>
             </Link>
             <p className="footer-brand-description">
