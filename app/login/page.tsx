@@ -5,7 +5,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { FcGoogle } from "react-icons/fc"
 import { HiOutlineEye, HiOutlineEyeOff } from "react-icons/hi"
-import { loginUser } from "../lib/api"
+import { loginUser, checkout, Tier } from "../lib/api"
 import { useAuth } from "../lib/auth-context"
 import ComingSoonAction from "../componenets/ComingSoonAction"
 
@@ -29,6 +29,15 @@ export default function Login() {
     try {
       const user = await loginUser(email, password)
       login(user, rememberMe)
+
+      const pending = sessionStorage.getItem('pending_checkout') as Tier | null
+      if (pending === 'HALF' || pending === 'FULL') {
+        sessionStorage.removeItem('pending_checkout')
+        const { checkoutUrl } = await checkout(pending)
+        window.location.href = checkoutUrl
+        return
+      }
+
       router.push("/dashboard")
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to log in right now.")
