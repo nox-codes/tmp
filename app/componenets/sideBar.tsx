@@ -15,6 +15,7 @@ import {
   HiOutlineLogout,
 } from "react-icons/hi"
 import { useAuth } from "../lib/auth-context"
+import { useSidebar } from "../lib/sidebar-context"
 
 const primary = [
   { href: "/dashboard",  label: "Dashboard",    Icon: HiOutlineHome },
@@ -65,55 +66,78 @@ function computeStreak(): number {
 export default function SideBar() {
   const pathname = usePathname()
   const { logout } = useAuth()
+  const { isOpen, close } = useSidebar()
   const streak = useMemo(() => computeStreak(), [])
   const isActive = (href: string) =>
     href === "/dashboard" ? pathname === href : pathname.startsWith(href)
 
+  const handleNav = () => {
+    if (window.innerWidth < 768) close()
+  }
+
   return (
-    <aside className="sidebar-rail" aria-label="Primary">
-      <nav className="sidebar-group">
-        {primary.map(({ href, label, Icon }) => (
-          <Link
-            key={href}
-            href={href}
-            className={`sidebar-link ${isActive(href) ? "sidebar-link-active" : ""}`}
-            data-tooltip={label}
+    <>
+      {isOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/40 md:hidden"
+          onClick={close}
+        />
+      )}
+
+      <aside
+        className={`
+          sidebar-rail fixed z-50 md:sticky
+          ${isOpen ? "translate-x-0" : "-translate-x-full"}
+          md:translate-x-0 transition-transform duration-200
+        `}
+        aria-label="Primary"
+      >
+        <nav className="sidebar-group">
+          {primary.map(({ href, label, Icon }) => (
+            <Link
+              key={href}
+              href={href}
+              onClick={handleNav}
+              className={`sidebar-link ${isActive(href) ? "sidebar-link-active" : ""}`}
+              data-tooltip={label}
+            >
+              <Icon className="sidebar-icon" aria-hidden />
+              <span className="sr-only">{label}</span>
+            </Link>
+          ))}
+        </nav>
+
+        <div className="sidebar-divider" />
+
+        <nav className="sidebar-group">
+          {secondary.map(({ href, label, Icon }) => (
+            <Link
+              key={href}
+              href={href}
+              onClick={handleNav}
+              className={`sidebar-link ${isActive(href) ? "sidebar-link-active" : ""}`}
+              data-tooltip={label}
+            >
+              <Icon className="sidebar-icon" aria-hidden />
+              <span className="sr-only">{label}</span>
+            </Link>
+          ))}
+          <button
+            onClick={() => { logout() }}
+            className="sidebar-link sidebar-link-danger"
+            data-tooltip="Log Out"
+            aria-label="Log Out"
           >
-            <Icon className="sidebar-icon" aria-hidden />
-            <span className="sr-only">{label}</span>
-          </Link>
-        ))}
-      </nav>
+            <HiOutlineLogout className="sidebar-icon" aria-hidden />
+            <span className="sr-only">Log Out</span>
+          </button>
+        </nav>
 
-      <div className="sidebar-divider" />
-
-      <nav className="sidebar-group">
-        {secondary.map(({ href, label, Icon }) => (
-          <Link
-            key={href}
-            href={href}
-            className={`sidebar-link ${isActive(href) ? "sidebar-link-active" : ""}`}
-            data-tooltip={label}
-          >
-            <Icon className="sidebar-icon" aria-hidden />
-            <span className="sr-only">{label}</span>
-          </Link>
-        ))}
-        <button
-          onClick={() => logout()}
-          className="sidebar-link sidebar-link-danger"
-          data-tooltip="Log Out"
-          aria-label="Log Out"
-        >
-          <HiOutlineLogout className="sidebar-icon" aria-hidden />
-          <span className="sr-only">Log Out</span>
-        </button>
-      </nav>
-
-      <div className="sidebar-streak" data-tooltip={`${streak}-day streak`}>
-        <span className="sidebar-streak-flame">🔥</span>
-        <span className="sidebar-streak-count">{streak}</span>
-      </div>
-    </aside>
+        <div className="sidebar-streak" data-tooltip={`${streak}-day streak`}>
+          <span className="sidebar-streak-flame">🔥</span>
+          <span className="sidebar-streak-count">{streak}</span>
+        </div>
+      </aside>
+    </>
   )
 }

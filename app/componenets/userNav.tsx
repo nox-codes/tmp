@@ -5,25 +5,35 @@ import Image from "next/image";
 import { useState, useRef } from "react";
 import { GoBellFill } from "react-icons/go";
 import { IoCogSharp } from "react-icons/io5";
-import { HiLightningBolt } from "react-icons/hi";
+import { HiLightningBolt, HiOutlineMenu, HiOutlineX } from "react-icons/hi";
 import NotificationPopup from "./NotificationPopup";
 import { notifications, getUnreadCount } from "../data/notifications";
 import { useAuth } from "../lib/auth-context";
+import { useSidebar } from "../lib/sidebar-context";
 
 export default function UserNav() {
   const [showNotifs, setShowNotifs] = useState(false)
   const bellRef = useRef<HTMLAnchorElement>(null)
   const unread = getUnreadCount(notifications)
   const { user, gender } = useAuth()
+  const { isOpen, toggle } = useSidebar()
   const avatarSrc = gender === 'female' ? '/female-avatar.svg' : '/male-avatar.svg'
 
   return (
     <nav className="nav-bar">
       <div className="nav-container">
-        <Link href="/dashboard" className="nav__logo">
-          <Image width={32} height={32} src="/logo-nobg.png" alt="UniLock" />
-          <span className="nav__logo-text">UniLock</span>
-        </Link>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={toggle}
+            className="user-nav-icon-btn md:hidden"
+            aria-label={isOpen ? "Close sidebar" : "Open sidebar"}
+          >
+            {isOpen ? <HiOutlineX className="h-5 w-5" /> : <HiOutlineMenu className="h-5 w-5" />}
+          </button>
+          <Link href="/dashboard" className="nav__logo md:hidden">
+            <Image width={32} height={32} src="/logo-nobg.png" alt="UniLock" />
+          </Link>
+        </div>
 
         <div className="user-nav-search">
           <input placeholder="Search courses, materials, past questions..." />
