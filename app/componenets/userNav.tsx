@@ -30,8 +30,8 @@ export default function UserNav() {
   return (
     <nav className="nav-bar">
       <div className="nav-container">
-        <div className="flex items-center gap-2">
-          {isMobile && (
+        {isMobile && (
+          <div className="flex items-center gap-2">
             <button
               onClick={toggle}
               className="user-nav-icon-btn"
@@ -39,8 +39,8 @@ export default function UserNav() {
             >
               {isOpen ? <HiOutlineX className="h-5 w-5" /> : <HiOutlineViewList className="h-5 w-5" />}
             </button>
-          )}
-        </div>
+          </div>
+        )}
 
         <div className="user-nav-search">
           <input placeholder="Search courses, materials, past questions..." />

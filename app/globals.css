@@ -4170,7 +4170,6 @@ a {
 }
 .user-nav-search {
   margin-inline: calc(var(--spacing) * 6);
-  max-width: var(--container-md);
   flex: 1;
   display: none;
 }
