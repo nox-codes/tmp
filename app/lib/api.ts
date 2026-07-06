@@ -245,10 +245,6 @@ export function updateUserProfile(data: Partial<{ username: string; faculty: str
   })
 }
 
-export function fetchUserProfile() {
-  return apiRequest<AuthUser>('/user/me', { auth: true })
-}
-
 export function updateUserTier(tier: Tier) {
   const raw = getCookie(SESSION_COOKIE)
   if (!raw) return

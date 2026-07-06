@@ -14,7 +14,7 @@ import {
   HiOutlineCog,
   HiOutlineX,
 } from "react-icons/hi"
-import { fetchCourses, fetchUserProfile, updateUserTier, type CourseApiItem, type Tier } from "../lib/api"
+import { fetchCourses, updateUserTier, getApiBaseUrl, type CourseApiItem, type Tier } from "../lib/api"
 import { useAuth, useRequireAuth } from "../lib/auth-context"
 
 type CbtResult = {
@@ -295,15 +295,34 @@ export default function Dashboard() {
                 onClick={async () => {
                   setCheckingPayment(true)
                   try {
-                    const profile = await fetchUserProfile()
                     const raw = sessionStorage.getItem("pending_payment")
                     if (raw) {
                       const { tier } = JSON.parse(raw)
-                      if (profile.tier === tier) {
-                        updateUserTier(tier)
-                        sessionStorage.removeItem("pending_payment")
-                        setPendingTier(null)
-                        refreshUserData()
+                      const cookie = document.cookie.match(new RegExp(`(?:^|;\\s*)unilock_session=([^;]*)`))
+                      if (cookie) {
+                        const parsed = JSON.parse(decodeURIComponent(cookie[1]))
+                        const refreshToken = parsed?.user?.refreshToken
+                        if (refreshToken) {
+                          const refreshRes = await fetch(`${getApiBaseUrl()}/auth/refresh`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ refresh: refreshToken }),
+                          })
+                          if (refreshRes.ok) {
+                            const { accessToken } = await refreshRes.json()
+                            const payload = accessToken.split(".")[1]
+                            const base64 = payload.replace(/-/g, "+").replace(/_/g, "/")
+                            const padded = base64.padEnd(base64.length + (4 - (base64.length % 4)) % 4, "=")
+                            const claims = JSON.parse(atob(padded))
+                            const currentTier = claims.tier || claims.role || claims.subscriptionTier
+                            if (currentTier === tier) {
+                              updateUserTier(tier)
+                              sessionStorage.removeItem("pending_payment")
+                              setPendingTier(null)
+                              refreshUserData()
+                            }
+                          }
+                        }
                       }
                     }
                   } catch {}

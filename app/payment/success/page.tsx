@@ -57,12 +57,7 @@ async function fetchProfileWithRefresh(): Promise<{ tier: Tier; accessToken: str
     return { tier: tierFromClaims as Tier, accessToken }
   }
 
-  const profileRes = await fetch(`${getApiBaseUrl()}/user/me`, {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  })
-  if (!profileRes.ok) return null
-  const body = await profileRes.json()
-  return { tier: body.tier, accessToken }
+  return null
 }
 
 function updateCookie(tier: Tier, accessToken?: string) {
