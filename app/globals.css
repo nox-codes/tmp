@@ -6373,7 +6373,6 @@ a {
   flex-direction: column;
   align-self: flex-start;
   display: flex;
-  position: sticky;
 }
 .sidebar-group {
   align-items: center;

@@ -86,7 +86,7 @@ export default function SideBar() {
 
       <aside
         className={`
-          sidebar-rail fixed z-50 md:sticky
+          sidebar-rail fixed md:sticky z-50
           ${isOpen ? "translate-x-0" : "-translate-x-full"}
           md:translate-x-0 transition-transform duration-200
         `}

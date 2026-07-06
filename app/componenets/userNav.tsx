@@ -25,7 +25,7 @@ export default function UserNav() {
         <div className="flex items-center gap-2">
           <button
             onClick={toggle}
-            className="user-nav-icon-btn md:hidden"
+            className="user-nav-icon-btn !md:hidden"
             aria-label={isOpen ? "Close sidebar" : "Open sidebar"}
           >
             {isOpen ? <HiOutlineX className="h-5 w-5" /> : <HiOutlineViewList className="h-5 w-5" />}
