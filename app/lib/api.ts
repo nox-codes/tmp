@@ -270,3 +270,11 @@ export function checkout(tier: Exclude<Tier, 'FREE'>) {
     return res
   })
 }
+
+export function verifyPayment(reference: string, tier: Tier) {
+  return apiRequest<{ message: string }>('/order/verify-payment', {
+    method: 'POST',
+    auth: true,
+    body: { reference, tier },
+  })
+}

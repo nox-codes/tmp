@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react"
 import { HiCheckCircle, HiXCircle, HiClock } from "react-icons/hi"
-import { updateUserTier, getApiBaseUrl } from "../../lib/api"
+import { verifyPayment, getApiBaseUrl } from "../../lib/api"
 import type { Tier } from "../../lib/api"
 
 function getCookie(name: string) {
@@ -86,9 +86,9 @@ function PaymentSuccessInner() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
-    const reference = params.get("reference")
+    const urlReference = params.get("reference")
 
-    if (!reference) {
+    if (!urlReference) {
       const pending = sessionStorage.getItem("pending_payment")
       if (pending) {
         try {
@@ -103,20 +103,33 @@ function PaymentSuccessInner() {
 
     const pending = sessionStorage.getItem("pending_payment")
     let tier: Tier | null = null
+    let storedReference: string | null = null
 
     if (pending) {
       try {
         const parsed = JSON.parse(pending)
         tier = parsed.tier as Tier
+        storedReference = parsed.reference as string
         setExpectedTier(tier)
-        if (tier) updateUserTier(tier)
       } catch {}
       sessionStorage.removeItem("pending_payment")
     }
 
     let cancelled = false
 
-    fetchProfileWithRefresh().then(profile => {
+    async function verify() {
+      if (storedReference && tier) {
+        try {
+          await verifyPayment(storedReference, tier)
+          if (cancelled) return
+          updateCookie(tier)
+          setStatus("success")
+          setTimeout(() => window.location.replace("/dashboard"), 2000)
+          return true
+        } catch {}
+      }
+
+      const profile = await fetchProfileWithRefresh()
       if (cancelled) return
       const confirmedTier = tier ?? (profile?.tier ?? null)
       if (confirmedTier) {
@@ -124,15 +137,14 @@ function PaymentSuccessInner() {
       } else if (profile?.accessToken) {
         updateCookie("HALF", profile.accessToken)
       }
-    })
-
-    const redirectTimer = setTimeout(() => {
-      if (cancelled) return
       setStatus("success")
       setTimeout(() => window.location.replace("/dashboard"), 2000)
-    }, 1500)
+      return true
+    }
 
-    return () => { cancelled = true; clearTimeout(redirectTimer) }
+    verify()
+
+    return () => { cancelled = true }
   }, [retryKey])
 
   useEffect(() => {
