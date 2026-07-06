@@ -121,10 +121,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [user, loading])
 
   const login = useCallback((userData: AuthUser, rememberMe = true) => {
-    const tier = userData.accessToken
-      ? extractTier(decodeAccessToken(userData.accessToken) ?? {}) ?? userData.tier
-      : userData.tier
-    const userWithTier: AuthUser = { ...userData, tier: tier ?? 'FREE' }
+    const tier = userData.tier ?? (userData.accessToken
+      ? extractTier(decodeAccessToken(userData.accessToken) ?? {})
+      : null) ?? 'FREE'
+    const userWithTier: AuthUser = { ...userData, tier }
     const session: SessionData = { user: userWithTier }
     setCookie(SESSION_COOKIE, JSON.stringify(session), rememberMe ? 30 : 0)
     setUser(userWithTier)
