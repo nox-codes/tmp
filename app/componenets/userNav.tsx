@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useState, useRef } from "react";
 import { GoBellFill } from "react-icons/go";
 import { IoCogSharp } from "react-icons/io5";
-import { HiLightningBolt, HiOutlineMenu, HiOutlineX } from "react-icons/hi";
+import { HiLightningBolt, HiOutlineViewList, HiOutlineX } from "react-icons/hi";
 import NotificationPopup from "./NotificationPopup";
 import { notifications, getUnreadCount } from "../data/notifications";
 import { useAuth } from "../lib/auth-context";
@@ -28,11 +28,8 @@ export default function UserNav() {
             className="user-nav-icon-btn md:hidden"
             aria-label={isOpen ? "Close sidebar" : "Open sidebar"}
           >
-            {isOpen ? <HiOutlineX className="h-5 w-5" /> : <HiOutlineMenu className="h-5 w-5" />}
+            {isOpen ? <HiOutlineX className="h-5 w-5" /> : <HiOutlineViewList className="h-5 w-5" />}
           </button>
-          <Link href="/dashboard" className="nav__logo md:hidden">
-            <Image width={32} height={32} src="/logo-nobg.png" alt="UniLock" />
-          </Link>
         </div>
 
         <div className="user-nav-search">
