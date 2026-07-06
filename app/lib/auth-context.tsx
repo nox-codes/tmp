@@ -28,12 +28,11 @@ function extractTier(claims: Record<string, unknown>): Tier | null {
 
 function setCookie(name: string, value: string, days: number) {
   if (typeof document === 'undefined') return
-  const secure = typeof location !== 'undefined' && location.protocol === 'https:' ? '; Secure' : ''
   if (days > 0) {
     const expires = new Date(Date.now() + days * 86400000).toUTCString()
-    document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/; SameSite=Lax${secure}`
+    document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/; SameSite=Lax`
   } else {
-    document.cookie = `${name}=${encodeURIComponent(value)}; path=/; SameSite=Lax${secure}`
+    document.cookie = `${name}=${encodeURIComponent(value)}; path=/; SameSite=Lax`
   }
 }
 
@@ -44,8 +43,11 @@ function getCookie(name: string): string | null {
 }
 
 function eraseCookie(name: string) {
+  document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax`
   const secure = typeof location !== 'undefined' && location.protocol === 'https:' ? '; Secure' : ''
-  document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax${secure}`
+  if (secure) {
+    document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax${secure}`
+  }
 }
 
 type SessionData = {
@@ -132,7 +134,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     eraseCookie(SESSION_COOKIE)
     eraseCookie(GENDER_COOKIE)
     setUser(null)
-    window.location.href = '/'
+    window.location.href = '/login'
   }, [])
 
   const refreshUser = useCallback(async () => {
