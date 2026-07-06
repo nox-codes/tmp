@@ -22,10 +22,10 @@ export default function UserNav() {
   return (
     <nav className="nav-bar">
       <div className="nav-container">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 md:hidden">
           <button
             onClick={toggle}
-            className="user-nav-icon-btn !md:hidden"
+            className="user-nav-icon-btn"
             aria-label={isOpen ? "Close sidebar" : "Open sidebar"}
           >
             {isOpen ? <HiOutlineX className="h-5 w-5" /> : <HiOutlineViewList className="h-5 w-5" />}

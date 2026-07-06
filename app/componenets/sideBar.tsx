@@ -86,10 +86,9 @@ export default function SideBar() {
 
       <aside
         className={`
-          sidebar-rail relative z-30
-          ${isOpen ? "w-16" : "w-0 overflow-hidden"}
-          md:w-16 md:sticky md:z-auto
-          transition-all duration-200
+          sidebar-rail fixed md:sticky z-50
+          ${isOpen ? "translate-x-0" : "-translate-x-full"}
+          md:translate-x-0 transition-transform duration-200
         `}
         aria-label="Primary"
       >
