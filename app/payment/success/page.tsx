@@ -117,7 +117,9 @@ function PaymentSuccessInner() {
         try {
           await verifyPayment(storedReference, tier)
           if (cancelled) return
-          updateCookie(tier)
+          const profile = await fetchProfileWithRefresh()
+          if (cancelled) return
+          updateCookie(tier, profile?.accessToken)
           setStatus("success")
           setTimeout(() => window.location.replace("/dashboard"), 2000)
           return true
