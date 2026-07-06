@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { GoBellFill } from "react-icons/go";
 import { IoCogSharp } from "react-icons/io5";
 import { HiLightningBolt, HiOutlineViewList, HiOutlineX } from "react-icons/hi";
@@ -18,18 +18,28 @@ export default function UserNav() {
   const { user, gender } = useAuth()
   const { isOpen, toggle } = useSidebar()
   const avatarSrc = gender === 'female' ? '/female-avatar.svg' : '/male-avatar.svg'
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
 
   return (
     <nav className="nav-bar">
       <div className="nav-container">
-        <div className="flex items-center gap-2 md:hidden">
-          <button
-            onClick={toggle}
-            className="user-nav-icon-btn"
-            aria-label={isOpen ? "Close sidebar" : "Open sidebar"}
-          >
-            {isOpen ? <HiOutlineX className="h-5 w-5" /> : <HiOutlineViewList className="h-5 w-5" />}
-          </button>
+        <div className="flex items-center gap-2">
+          {isMobile && (
+            <button
+              onClick={toggle}
+              className="user-nav-icon-btn"
+              aria-label={isOpen ? "Close sidebar" : "Open sidebar"}
+            >
+              {isOpen ? <HiOutlineX className="h-5 w-5" /> : <HiOutlineViewList className="h-5 w-5" />}
+            </button>
+          )}
         </div>
 
         <div className="user-nav-search">
