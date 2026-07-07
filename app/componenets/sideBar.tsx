@@ -86,9 +86,10 @@ export default function SideBar() {
 
       <aside
         className={`
-          sidebar-rail fixed md:sticky z-50
-          ${isOpen ? "translate-x-0" : "-translate-x-full"}
-          md:translate-x-0 transition-transform duration-200
+          sidebar-rail fixed z-50 left-4
+          ${isOpen ? "translate-x-0" : "-translate-x-[calc(100%+1rem)]"}
+          md:translate-x-0 md:top-1/2 md:-translate-y-1/2
+          top-24 transition-transform duration-200
         `}
         aria-label="Primary"
       >

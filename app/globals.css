@@ -6358,20 +6358,28 @@ a {
   background-color: var(--color-slate-700);
 }
 .sidebar-rail {
-  top: calc(var(--spacing) * 16);
-  min-height: calc(100vh - 4rem);
   width: calc(var(--spacing) * 16);
   align-items: center;
   gap: calc(var(--spacing) * 2);
-  border-right-style: var(--tw-border-style);
-  border-right-width: 1px;
-  border-color: var(--line);
-  background-color: var(--bg);
   padding-inline: calc(var(--spacing) * 2);
-  padding-block: calc(var(--spacing) * 5);
+  padding-block: calc(var(--spacing) * 3);
   flex-direction: column;
-  align-self: flex-start;
   display: flex;
+  border-radius: calc(var(--radius-2xl));
+  background-color: var(--bg);
+  border: 1px solid rgb(255 255 255);
+  box-shadow:
+    0 0 20px -4px rgb(0 0 0 / .25),
+    0 0 0 1px rgb(255 255 255 / .06) inset;
+}
+@supports (color: color-mix(in oklab, red, red)) {
+  .sidebar-rail {
+    background-color: color-mix(in oklab, var(--bg) 60%, transparent);
+  }
+}
+.sidebar-rail {
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
 }
 .sidebar-group {
   align-items: center;
@@ -6432,16 +6440,7 @@ a {
   left: 100%;
 }
 .sidebar-link-active {
-  background-color: #00baa726;
-}
-@supports (color: color-mix(in lab, red, red)) {
-  .sidebar-link-active {
-    background-color: color-mix(
-      in oklab,
-      var(--color-teal-500) 15%,
-      transparent
-    );
-  }
+  background-color: #fff;
 }
 .sidebar-link-active {
   color: var(--color-teal-400);
