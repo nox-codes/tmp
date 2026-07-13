@@ -11,7 +11,7 @@ import {
   HiOutlineCheckCircle,
   HiOutlineExclamationCircle,
 } from "react-icons/hi"
-import { fetchCourses, fetchQuestionsByCourse, type CourseApiItem } from "../lib/api"
+import { fetchCourses, fetchQuestions, type CourseApiItem } from "../lib/api"
 import { useAuth } from "../lib/auth-context"
 import ComingSoonAction from "../componenets/ComingSoonAction"
 
@@ -79,15 +79,27 @@ export default function CBTPage() {
     let active = true
     async function load() {
       try {
-        const data = await fetchCourses()
+        const [courseData, allQuestions] = await Promise.all([
+          fetchCourses(),
+          fetchQuestions().catch(() => []),
+        ])
         if (!active) return
-if (Array.isArray(data) && data.length > 0) {
-          setCourses(data as CourseWithCount[])
-          setSelectedCourse((data[0] as CourseWithCount).code)
+
+        const counts = new Map<string, number>()
+        for (const q of allQuestions) {
+          const code = q.course?.code
+          if (code) counts.set(code, (counts.get(code) ?? 0) + 1)
+        }
+
+        if (Array.isArray(courseData) && courseData.length > 0) {
+          const withCounts = courseData.map(c => ({ ...c, questionCount: counts.get(c.code) ?? 0 }))
+          setCourses(withCounts)
+          setSelectedCourse(withCounts[0].code)
         } else {
           setError("No courses available yet.")
         }
-      } catch {
+      } catch (err) {
+        console.error('[CBT] Failed to load courses:', err)
         if (active) setError("Could not load courses from server.")
       } finally {
         if (active) setLoading(false)

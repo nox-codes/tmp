@@ -11,7 +11,7 @@ import {
   HiOutlineStar,
   HiOutlineClock,
 } from "react-icons/hi"
-import { CourseApiItem, fetchCourses, fetchQuestionsByCourse } from "../lib/api"
+import { CourseApiItem, fetchCourses, fetchQuestions } from "../lib/api"
 import ComingSoonAction from "../componenets/ComingSoonAction"
 
 type Course = {
@@ -71,19 +71,23 @@ export default function Library() {
 
     async function loadCourses() {
       try {
-        const data = await fetchCourses()
+        const [courseData, allQuestions] = await Promise.all([
+          fetchCourses(),
+          fetchQuestions().catch(() => []),
+        ])
         if (!active) return
 
-if (Array.isArray(data) && data.length > 0) {
-        const coursesWithCounts = await Promise.all(
-          data.map(async (course) => {
-            const questions = await fetchQuestionsByCourse(course.code)
-            return mapApiCourse(course, questions.length)
-          })
-        )
-        setCourses(coursesWithCounts)
-      }
-      } catch {
+        const counts = new Map<string, number>()
+        for (const q of allQuestions) {
+          const code = q.course?.code
+          if (code) counts.set(code, (counts.get(code) ?? 0) + 1)
+        }
+
+        if (Array.isArray(courseData) && courseData.length > 0) {
+          setCourses(courseData.map((c, i) => mapApiCourse(c, counts.get(c.code) ?? 0, i)))
+        }
+      } catch (err) {
+        console.error('[Library] Failed to load courses:', err)
       } finally {
         if (active) setLoading(false)
       }
@@ -203,7 +207,7 @@ if (Array.isArray(data) && data.length > 0) {
   )
 }
 
-function mapApiCourse(course: CourseApiItem, index: number, questionCount: number = 0): Course {
+function mapApiCourse(course: CourseApiItem, questionCount: number, index: number): Course {
   const colors = ["teal", "amber", "green", "purple"]
 
   return {
