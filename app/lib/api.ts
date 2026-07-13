@@ -142,9 +142,14 @@ async function apiRequest<T>(path: string, options: RequestOptions = {}): Promis
           }
           return retryData as T
         }
-      } catch {
+        const refreshText = await refreshRes.text()
+        console.error(`[API] Token refresh failed: ${refreshRes.status} ${refreshText}`)
+      } catch (err) {
+        console.error('[API] Token refresh error:', err)
         throw new ApiError('Session expired. Please log in again.', 401)
       }
+    } else {
+      console.error('[API] No refresh token available')
     }
     throw new ApiError('Session expired. Please log in again.', 401)
   }
@@ -210,7 +215,11 @@ export function fetchCourseById(id: string) {
 }
 
 export function fetchQuestionsByCourse(courseCode: string) {
-  return apiRequest<QuestionApiItem[]>(`/question/${encodeURIComponent(courseCode)}`)
+  return apiRequest<QuestionApiItem[]>(`/question/by-course/${encodeURIComponent(courseCode)}`).catch(() =>
+    apiRequest<QuestionApiItem[]>('/question').then(qs =>
+      qs.filter(q => q.course?.code === courseCode)
+    )
+  )
 }
 
 export type ExamResult = {

@@ -23,7 +23,7 @@ export default function RootLayout({
       <body className="min-h-screen flex flex-col antialiased">
         <Providers>
           <DynamicNav />
-          <div className="flex flex-1">
+          <div className="flex flex-1 pt-12">
             <ConditionalSideBar />
             <main className="flex-1 w-full">{children}</main>
           </div>
