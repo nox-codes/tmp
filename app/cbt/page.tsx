@@ -11,7 +11,7 @@ import {
   HiOutlineCheckCircle,
   HiOutlineExclamationCircle,
 } from "react-icons/hi"
-import { fetchCourses, type CourseApiItem } from "../lib/api"
+import { fetchCourses, fetchQuestionsByCourse, type CourseApiItem } from "../lib/api"
 import { useAuth } from "../lib/auth-context"
 import ComingSoonAction from "../componenets/ComingSoonAction"
 
@@ -25,6 +25,10 @@ type CbtResult = {
   total: number
   duration: string
   timestamp: string
+}
+
+type CourseWithCount = CourseApiItem & {
+  questionCount: number
 }
 
 function loadHistory(): CbtResult[] {
@@ -66,7 +70,7 @@ export default function CBTPage() {
   const [duration, setDuration] = useState(60)
   const [numQs, setNumQs] = useState(20)
   const [mode, setMode] = useState<"timed" | "practice">("timed")
-  const [courses, setCourses] = useState<CourseApiItem[]>([])
+  const [courses, setCourses] = useState<CourseWithCount[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [history, setHistory] = useState<CbtResult[]>([])
@@ -77,9 +81,9 @@ export default function CBTPage() {
       try {
         const data = await fetchCourses()
         if (!active) return
-        if (Array.isArray(data) && data.length > 0) {
-          setCourses(data)
-          setSelectedCourse(data[0].code)
+if (Array.isArray(data) && data.length > 0) {
+          setCourses(data as CourseWithCount[])
+          setSelectedCourse((data[0] as CourseWithCount).code)
         } else {
           setError("No courses available yet.")
         }
@@ -96,8 +100,8 @@ export default function CBTPage() {
 
   const stats = useMemo(() => computeStats(history), [history])
 
-  const selected = courses.find(c => c.code === selectedCourse) ?? courses[0]
-  const availableCount = selected?.questions?.length ?? 0
+  const selected = courses.find((c: CourseWithCount) => c.code === selectedCourse) ?? courses[0]
+  const availableCount = selected?.questionCount ?? 0
   const maxSelectable = Math.min(availableCount, dailyLimit)
   const selectedQuestionCount = Math.min(numQs, maxSelectable)
 
@@ -215,7 +219,7 @@ export default function CBTPage() {
                   >
                     <span className="cbt-course-chip-code">{c.code}</span>
                     <span className="cbt-course-chip-name">{c.title}</span>
-                    <span className="cbt-course-chip-meta">{c.questions?.length ?? 0} questions</span>
+                    <span className="cbt-course-chip-meta">{c.questionCount ?? 0} questions</span>
                   </button>
                 ))}
               </div>

@@ -11,7 +11,7 @@ import {
   HiOutlineStar,
   HiOutlineClock,
 } from "react-icons/hi"
-import { CourseApiItem, fetchCourses } from "../lib/api"
+import { CourseApiItem, fetchCourses, fetchQuestionsByCourse } from "../lib/api"
 import ComingSoonAction from "../componenets/ComingSoonAction"
 
 type Course = {
@@ -73,9 +73,16 @@ export default function Library() {
       try {
         const data = await fetchCourses()
         if (!active) return
-        if (Array.isArray(data) && data.length > 0) {
-          setCourses(data.map(mapApiCourse))
-        }
+
+if (Array.isArray(data) && data.length > 0) {
+        const coursesWithCounts = await Promise.all(
+          data.map(async (course) => {
+            const questions = await fetchQuestionsByCourse(course.code)
+            return mapApiCourse(course, questions.length)
+          })
+        )
+        setCourses(coursesWithCounts)
+      }
       } catch {
       } finally {
         if (active) setLoading(false)
@@ -196,9 +203,8 @@ export default function Library() {
   )
 }
 
-function mapApiCourse(course: CourseApiItem, index: number): Course {
+function mapApiCourse(course: CourseApiItem, index: number, questionCount: number = 0): Course {
   const colors = ["teal", "amber", "green", "purple"]
-  const questionCount = course.questions?.length ?? 0
 
   return {
     id: course.id,

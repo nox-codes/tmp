@@ -210,9 +210,7 @@ export function fetchCourseById(id: string) {
 }
 
 export function fetchQuestionsByCourse(courseCode: string) {
-  return apiRequest<QuestionApiItem[]>('/question').then(qs =>
-    qs.filter(q => q.course?.code === courseCode)
-  )
+  return apiRequest<QuestionApiItem[]>(`/question/${encodeURIComponent(courseCode)}`)
 }
 
 export type ExamResult = {
